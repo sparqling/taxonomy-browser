@@ -1,6 +1,7 @@
 var haystack = [];
 
 const sparql_search = 'https://orth.dbcls.jp/ver/sparql_search.php';
+const endpoint = 'https://orth.dbcls.jp/sparql';
 
 function init() {
     var genome_type = 'CompleteGenome';
@@ -10,9 +11,33 @@ function init() {
 
     haystack = [];
     $.ajaxSetup({ async: false });
-    $.getJSON(sparql_search + '?genome_type=' + genome_type, function(data) {
-    	for (key in data) {
-    	    haystack.push(key);
+
+    query = `
+	PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	PREFIX up: <http://purl.uniprot.org/core/>
+	PREFIX upTax: <http://purl.uniprot.org/taxonomy/>
+	PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
+
+	SELECT ?depth ?name (?taxon AS ?taxid) ?count
+		WHERE {
+		{
+			SELECT ?taxon (COUNT(?proteome) AS ?count)
+	WHERE {
+			?proteome a up:Proteome;
+		up:organism ?up_taxid ;
+		rdfs:label ?org_label .
+			?up_taxid rdfs:subClassOf? ?taxon .
+	}
+}
+		?taxon up:scientificName ?name ;
+	up:rank ?rank .
+		?rank ortho:taxRankDepth ?depth .
+}
+	ORDER BY DESC(?count) ?depth ?name
+		`;
+    $.getJSON(`${endpoint}?query=${encodeURIComponent(query)}`, function(data) {
+    	for (let binding of data.results.bindings) {
+    	    haystack.push(binding.name.value);
     	}
     });
 
