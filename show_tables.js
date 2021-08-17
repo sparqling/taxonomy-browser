@@ -3,6 +3,10 @@ var haystack = [];
 const sparql_search = 'https://orth.dbcls.jp/ver/sparql_search.php';
 const endpoint = 'https://orth.dbcls.jp/sparql';
 
+function queryToEndpoint(query, callback) {
+    $.getJSON(`${endpoint}?query=${encodeURIComponent(query)}`, callback);
+}
+
 function init() {
     var genome_type = 'CompleteGenome';
     if ($('#draft').prop('checked')) {
@@ -12,7 +16,7 @@ function init() {
     haystack = [];
     $.ajaxSetup({async: false});
 
-    query = `
+    let query = `
 	PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 	PREFIX up: <http://purl.uniprot.org/core/>
 	PREFIX upTax: <http://purl.uniprot.org/taxonomy/>
@@ -35,7 +39,7 @@ function init() {
 }
 	ORDER BY DESC(?count) ?depth ?name
 		`;
-    $.getJSON(`${endpoint}?query=${encodeURIComponent(query)}`, function (data) {
+    queryToEndpoint(query, function (data) {
         for (let binding of data.results.bindings) {
             haystack.push(binding.name.value);
         }
@@ -203,7 +207,25 @@ function show_contents(taxon_name) {
     // Get tax ID
     var taxid;
     var rank;
-    $.getJSON(sparql_search + '?sci_name=' + taxon_name + '&genome_type_to_search=' + genome_type, function (data) {
+
+    query = `
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX up: <http://purl.uniprot.org/core/>
+        PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
+
+    SELECT ?rank ?taxon (COUNT(?organism) AS ?count)
+    WHERE {
+            ?organism a up:Proteome ;
+        up:organism ?up_taxid .
+            ?up_taxid rdfs:subClassOf? ?taxon .
+            ?taxon up:scientificName "${taxon_name}";
+        up:rank ?rank .
+            ?rank ortho:taxRankDepth ?depth .
+    }
+    ORDER BY ?count
+        `;
+
+    queryToEndpoint(query, function (data) {
         data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
         taxid = RegExp.$1;
         rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
