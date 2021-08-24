@@ -196,10 +196,24 @@ function show_contents(taxon_name) {
   var rank;
 
   
-  queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/scientift_name_to_taxid.rq", { taxon_name }, function (data) {
+  queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/scientific_name_to_taxid.rq", { taxon_name }, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
     taxid = RegExp.$1;
     rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
+
+    // Show tables
+    let count = show_hierarchy(taxid, genome_type, lang);
+    let count_unit = 'proteome';
+    if (count >= 2) {
+      count_unit = 'proteomes';
+    }
+    $('#sub_title_div').html(`<font size="2"><b>&emsp;Found ${count} ${count_unit}</b><br><br></font>`);
+    show_dbpedia(taxon_name, taxid, lang);
+    show_genome_comparison(taxid);
+    show_specific_genes(taxid);
+    show_genome_list(rank, taxon_name, taxid, genome_type);
+    $('#details').attr('border', '1');
+    show_selected_genome();
   });
 
   // Hide initial contents
@@ -220,29 +234,6 @@ function show_contents(taxon_name) {
   var html = `<h3><i>${taxon_name}</i> (Taxonomy ID: ${taxid})</h3>`;
   $('#main_taxon_name_div').html(html);
 
-  // Show tables
-  setTimeout(function () {
-    let count = show_hierarchy(taxid, genome_type, lang);
-    let count_unit = 'proteome';
-    if (count >= 2) {
-      count_unit = 'proteomes';
-    }
-    $('#sub_title_div').html(`<font size="2"><b>&emsp;Found ${count} ${count_unit}</b><br><br></font>`);
-  }, 0);
-  setTimeout(function () {
-    show_dbpedia(taxon_name, taxid, lang);
-  }, 0);
-  setTimeout(function () {
-    show_genome_comparison(taxid);
-  }, 0);
-  setTimeout(function () {
-    show_specific_genes(taxid);
-  }, 0);
-  setTimeout(function () {
-    show_genome_list(rank, taxon_name, taxid, genome_type);
-    $('#details').attr('border', '1');
-  }, 0);
-  show_selected_genome();
 }
 
 function dbpedia_name(taxon_name) {
