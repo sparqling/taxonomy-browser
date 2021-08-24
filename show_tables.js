@@ -3,9 +3,20 @@ var haystack = [];
 const sparql_search = 'https://orth.dbcls.jp/ver/sparql_search.php';
 const endpoint = 'https://orth.dbcls.jp/sparql';
 
+
 function queryToEndpoint(query, callback) {
   $.getJSON(`${endpoint}?query=${encodeURIComponent(query)}`, callback);
 }
+
+
+function queryBySpang(queryUrl, param, callback) {
+  spang.getTemplate(queryUrl, (query) => {
+    spang.query(query, endpoint, { param: param, format: 'json' }, (errror, status, result) => {
+      callback(JSON.parse(result));
+    });
+  });
+}
+
 
 function init() {
   var genome_type = 'CompleteGenome';
@@ -16,30 +27,7 @@ function init() {
   haystack = [];
   $.ajaxSetup({ async: false });
 
-  let query = `
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX up: <http://purl.uniprot.org/core/>
-PREFIX upTax: <http://purl.uniprot.org/taxonomy/>
-PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
-
-SELECT ?depth ?name (?taxon AS ?taxid) ?count
-WHERE {
-  {
-    SELECT ?taxon (COUNT(?proteome) AS ?count)
-    WHERE {
-      ?proteome a up:Proteome;
-          up:organism ?up_taxid ;
-          rdfs:label ?org_label .
-      ?up_taxid rdfs:subClassOf? ?taxon .
-    }
-  }
-  ?taxon up:scientificName ?name ;
-      up:rank ?rank .
-  ?rank ortho:taxRankDepth ?depth .
-}
-ORDER BY DESC(?count) ?depth ?name
-`;
-  queryToEndpoint(query, function (data) {
+  queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/get_taxa_as_candidates.rq", {}, function (data) {
     for (let binding of data.results.bindings) {
       haystack.push(binding.name.value);
     }
@@ -207,24 +195,8 @@ function show_contents(taxon_name) {
   var taxid;
   var rank;
 
-  query = `
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX up: <http://purl.uniprot.org/core/>
-PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
-
-SELECT ?rank ?taxon (COUNT(?organism) AS ?count)
-WHERE {
-  ?organism a up:Proteome ;
-      up:organism ?up_taxid .
-  ?up_taxid rdfs:subClassOf? ?taxon .
-  ?taxon up:scientificName "${taxon_name}";
-      up:rank ?rank .
-  ?rank ortho:taxRankDepth ?depth .
-}
-ORDER BY ?count
-`;
-
-  queryToEndpoint(query, function (data) {
+  
+  queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/scientift_name_to_taxid.rq", { taxon_name }, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
     taxid = RegExp.$1;
     rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
