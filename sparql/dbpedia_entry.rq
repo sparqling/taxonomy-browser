@@ -1,0 +1,17 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbpedia: <http://dbpedia.org/resource/>
+SELECT ?label ?abst ?wiki ?image
+WHERE {
+    $entry dbo:wikiPageRedirects? ?dbpedia_entry .
+    ?dbpedia_entry rdfs:label ?label ;
+                   dbo:abstract ?abst ;
+                   <http://xmlns.com/foaf/0.1/isPrimaryTopicOf> ?wiki . 
+    OPTIONAL { 
+        ?dbpedia_entry <http://xmlns.com/foaf/0.1/depiction> ?image .
+    }
+    BIND(lang(?label) AS ?lang)
+    VALUES (?lang) {  ("en") {{ lang }} }
+    BIND(lang(?abst) AS ?abst_lang)
+    VALUES (?abst_lang) { ("en") {{ lang }} }
+}
