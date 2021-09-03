@@ -6,7 +6,7 @@ PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
 
 SELECT DISTINCT ?rank ?label ?taxon ?count
 WHERE {
-  upTax:$taxid rdfs:subClassOf ?taxon .
+  upTax:{{ taxid }} rdfs:subClassOf ?taxon .
   ?taxon up:scientificName ?label ;
       up:rank ?rank .
   ?rank ortho:taxRankDepth ?depth .
