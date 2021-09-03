@@ -31,4 +31,4 @@ WHERE {
     ?proteome rdfs:seeAlso/dct:identifier ?assembly .
   }
 }
-ORDER BY ?organismdbpedia_entry.rq
+ORDER BY ?organism
