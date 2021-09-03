@@ -11,7 +11,7 @@ WHERE {
         ?dbpedia_entry <http://xmlns.com/foaf/0.1/depiction> ?image .
     }
     BIND(lang(?label) AS ?lang)
-    VALUES (?lang) {  ("en") {{ lang }} }
+    VALUES (?lang) {  ("en") {{ lang_list }} }
     BIND(lang(?abst) AS ?abst_lang)
-    VALUES (?abst_lang) { ("en") {{ lang }} }
+    VALUES (?abst_lang) { ("en") {{ lang_list }} }
 }
