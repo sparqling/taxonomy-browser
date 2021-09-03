@@ -1,13 +1,11 @@
 var haystack = [];
 
 const sparql_search = 'https://orth.dbcls.jp/ver/sparql_search.php';
-const endpoint = 'https://orth.dbcls.jp/sparql';
-
+const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
 
 function queryToEndpoint(query, callback) {
   $.getJSON(`${endpoint}?query=${encodeURIComponent(query)}`, callback);
 }
-
 
 function queryBySpang(queryUrl, param, callback) {
   spang.getTemplate(queryUrl, (query) => {
@@ -16,7 +14,6 @@ function queryBySpang(queryUrl, param, callback) {
     });
   });
 }
-
 
 function init() {
   var genome_type = 'CompleteGenome';
@@ -202,18 +199,16 @@ function show_contents(taxon_name) {
     rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
 
     // Show tables
-    let count = show_hierarchy(taxid, genome_type, lang);
-    let count_unit = 'proteome';
-    if (count >= 2) {
-      count_unit = 'proteomes';
-    }
-    $('#sub_title_div').html(`<font size="2"><b>&emsp;Found ${count} ${count_unit}</b><br><br></font>`);
+    show_hierarchy(taxid, genome_type, lang);
     show_dbpedia(taxon_name, taxid, lang);
     show_genome_comparison(taxid);
     show_specific_genes(taxid);
     show_genome_list(rank, taxon_name, taxid, genome_type);
     $('#details').attr('border', '1');
     show_selected_genome();
+    // Show main taxon name
+    var html = `<h3><i>${taxon_name}</i> (Taxonomy ID: ${taxid})</h3>`;
+    $('#main_taxon_name_div').html(html);
   });
 
   // Hide initial contents
@@ -229,11 +224,6 @@ function show_contents(taxon_name) {
   $('#counter_div').html('');
   $('#details').attr('border', '0');
   $('#details').html('');
-
-  // Show main taxon name
-  var html = `<h3><i>${taxon_name}</i> (Taxonomy ID: ${taxid})</h3>`;
-  $('#main_taxon_name_div').html(html);
-
 }
 
 function dbpedia_name(taxon_name) {
@@ -263,162 +253,183 @@ function show_hierarchy(taxid, genome_type, lang) {
   var table_upper = [];
   var table_lower = [];
   var table_sister = [];
-  $.getJSON(sparql_search + '?taxid_to_get_upper=' + taxid + '&genome_type_to_search=' + genome_type, function (data) {
-    var data_p = data['results']['bindings'];
-    for (var i = 0; i < data_p.length; i++) {
-      table_upper[i] = data_p[i];
-      var dbpedia = dbpedia_name(data_p[i]['label']['value']);
-      if (dbpedia) {
-        table_upper[i]['dbpedia'] = dbpedia.name;
-        list += '( ' + dbpedia.uri + ' )';
+
+  let upper_promise = new Promise((resolve, reject) => {
+    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_upper.rq", { taxid }, function (data) {
+      var data_p = data['results']['bindings'];
+      for (var i = 0; i < data_p.length; i++) {
+        table_upper[i] = data_p[i];
+        var dbpedia = dbpedia_name(data_p[i]['label']['value']);
+        if (dbpedia) {
+          table_upper[i]['dbpedia'] = dbpedia.name;
+          list += '( ' + dbpedia.uri + ' )';
+        }
       }
-    }
+      resolve();
+    })
   });
-  $.getJSON(sparql_search + '?taxid_to_get_lower=' + taxid + '&genome_type_to_search=' + genome_type, function (data) {
-    var data_p = data['results']['bindings'];
-    for (var i = 0; i < data_p.length; i++) {
-      table_lower[i] = data_p[i];
-      var dbpedia = dbpedia_name(data_p[i]['label']['value']);
-      if (dbpedia) {
-        table_lower[i]['dbpedia'] = dbpedia.name;
-        list += '( ' + dbpedia.uri + ' )';
+
+  let lower_promise = new Promise((resolve, reject) => {
+    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_lower.rq", { taxid }, function (data) {
+      var data_p = data['results']['bindings'];
+      for (var i = 0; i < data_p.length; i++) {
+        table_lower[i] = data_p[i];
+        var dbpedia = dbpedia_name(data_p[i]['label']['value']);
+        if (dbpedia) {
+          table_lower[i]['dbpedia'] = dbpedia.name;
+          list += '( ' + dbpedia.uri + ' )';
+        }
       }
-    }
+      resolve();
+    })
   });
-  $.getJSON(sparql_search + '?taxid_to_get_sisters=' + taxid + '&genome_type_to_search=' + genome_type, function (data) {
-    var data_p = data['results']['bindings'];
-    for (var i = 0; i < data_p.length; i++) {
-      table_sister[i] = data_p[i];
-      var dbpedia = dbpedia_name(data_p[i]['label']['value']);
-      if (dbpedia) {
-        table_sister[i]['dbpedia'] = dbpedia.name;
-        list += '( ' + dbpedia.uri + ' )';
+
+  let sister_promise = new Promise((resolve, reject) => {
+    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_sisters.rq", { taxid }, function (data) {
+      var data_p = data['results']['bindings'];
+      for (var i = 0; i < data_p.length; i++) {
+        table_sister[i] = data_p[i];
+        var dbpedia = dbpedia_name(data_p[i]['label']['value']);
+        if (dbpedia) {
+          table_sister[i]['dbpedia'] = dbpedia.name;
+          list += '( ' + dbpedia.uri + ' )';
+        }
       }
-    }
+      resolve();
+    })
   });
 
   // Use DBpedia to translate
   var dbpedia_labe_en = {};
   var dbpedia_labe_local = {};
-  $.getJSON(sparql_search + '?tax_list_to_get_local=' + list + '&local_lang=' + lang, function (data) {
-    var data_p = data['results']['bindings'];
-    for (var i = 0; i < data_p.length; i++) {
-      var dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
-      if (data_p[i]['label_en']) {
-        dbpedia_labe_en[dbpedia_uri] = data_p[i]['label_en']['value'];
-      }
-      if (data_p[i]['label_local'] && lang != 'en') {
-        dbpedia_labe_local[dbpedia_uri] = data_p[i]['label_local']['value'];
-      }
-    }
-  });
-
-  // Show tables
-  var html = '<table id="taxonomy" class="hierarchy" border="1">';
-  html += '<tr><th colspan="3">Taxonomic hierarchy</th>';
-  html += '<th align="center"><font size="2"><i>N</i></font></th></tr>';
-  for (var i = 0; i < table_upper.length; i++) {
-    var rank = table_upper[i]['rank']['value'].replace(/.*\//, '');
-    var label = table_upper[i]['label']['value'];
-    var wiki = '';
-    if (table_upper[i]['dbpedia']) {
-      var dbpedia_uri = 'http://dbpedia.org/resource/' + table_upper[i]['dbpedia'];
-      if (dbpedia_labe_en[dbpedia_uri]) {
-        wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
-      }
-      if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
-        var label_local = dbpedia_labe_local[dbpedia_uri];
-        wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
-      }
-    }
-    label = '<td class="taxon_clickable" nowrap><i>' + label + '</i></td>';
-    html += '<tr><td class="rank_clickable" nowrap>' +
-      rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
-      '<td align="right"><font size="2">' + table_upper[i]['count']['value'] + '</font></td></tr>';
-  }
-
-  var main_count = 0;
-  for (var i = 0; i < table_sister.length; i++) {
-    var rank = table_sister[i]['rank']['value'].replace(/.*\//, '');
-    var sister_taxid = table_sister[i]['taxon']['value'].replace(/.*\//, '');
-    var label = table_sister[i]['label']['value'];
-    var sister_count = table_sister[i]['count']['value'];
-    var wiki = '';
-    if (table_sister[i]['dbpedia']) {
-      var dbpedia_uri = 'http://dbpedia.org/resource/' + table_sister[i]['dbpedia'];
-      if (dbpedia_labe_en[dbpedia_uri]) {
-        wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
-      }
-      if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
-        var label_local = dbpedia_labe_local[dbpedia_uri];
-        wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
-      }
-    }
-    var rank_orig = rank;
-    if (sister_taxid == taxid) {
-      rank = '<b>' + rank + '</b>';
-    }
-    var mark = '';
-    if (sister_taxid == taxid) {
-      mark = '-&ensp;';
-    } else {
-      mark = '+ ';
-    }
-    if (rank_orig == 'Superkingdom') {
-    } else {
-      mark = '&ensp;' + mark;
-    }
-    // if (rank_orig == 'Species') {
-    //     // mark = '&emsp;&ensp;';
-    //     mark = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-    // }
-
-    if (sister_taxid == taxid) {
-      label = '<td nowrap><i><b>' + label + '</b></i></td>';
-      html += '<tr bgcolor="#E3E3E3"><td nowrap>';
-    } else {
-      label = '<td class="taxon_clickable" nowrap><i>' + label + '</i></td>';
-      html += '<tr><td class="rank_clickable" nowrap>';
-    }
-    html += mark + rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
-      '<td align="right"><font size="2">' + sister_count + '</font></td>' + '</tr>';
-
-    if (sister_taxid == taxid) {
-      main_count = sister_count;
-      for (var j = 0; j < table_lower.length; j++) {
-        var rank = table_lower[j]['rank']['value'].replace(/.*\//, '');
-        var label = table_lower[j]['label']['value'];
-        var lower_count = table_lower[j]['count']['value'];
-        var wiki = '';
-        if (table_lower[j]['dbpedia']) {
-          var dbpedia_uri = 'http://dbpedia.org/resource/' + table_lower[j]['dbpedia'];
-          if (dbpedia_labe_en[dbpedia_uri]) {
-            wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
-          }
-          if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
-            var label_local = dbpedia_labe_local[dbpedia_uri];
-            wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
-          }
+  let local_promise = new Promise((resolve, reject) => {
+    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_local.rq", { taxid: list, local_lang: lang }, function (data) {
+      var data_p = data['results']['bindings'];
+      for (var i = 0; i < data_p.length; i++) {
+        var dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
+        if (data_p[i]['label_en']) {
+          dbpedia_labe_en[dbpedia_uri] = data_p[i]['label_en']['value'];
         }
-        // if (rank == "Species" && rank_orig == "Genus") {
-        rank = '&emsp;&emsp;&emsp;' + rank;
-        // } else if (rank == "Superkingdom") {
-        //     rank = '+ ' + rank;
-        // } else {
-        //     rank = '&emsp;&emsp;+ ' + rank;
-        // }
+        if (data_p[i]['label_local'] && lang != 'en') {
+          dbpedia_labe_local[dbpedia_uri] = data_p[i]['label_local']['value'];
+        }
+      }
+      resolve();
+    })
+  });
+  
+  let main_count = 0;
+  Promise.all([upper_promise, lower_promise, local_promise, sister_promise]).then(() => {
+    // Show tables
+    var html = '<table id="taxonomy" class="hierarchy" border="1">';
+    html += '<tr><th colspan="3">Taxonomic hierarchy</th>';
+    html += '<th align="center"><font size="2"><i>N</i></font></th></tr>';
+    for (var i = 0; i < table_upper.length; i++) {
+      var rank = table_upper[i]['rank']['value'].replace(/.*\//, '');
+      var label = table_upper[i]['label']['value'];
+      var wiki = '';
+      if (table_upper[i]['dbpedia']) {
+        var dbpedia_uri = 'http://dbpedia.org/resource/' + table_upper[i]['dbpedia'];
+        if (dbpedia_labe_en[dbpedia_uri]) {
+          wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
+        }
+        if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
+          var label_local = dbpedia_labe_local[dbpedia_uri];
+          wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
+        }
+      }
+      label = '<td class="taxon_clickable" nowrap><i>' + label + '</i></td>';
+      html += '<tr><td class="rank_clickable" nowrap>' +
+        rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
+        '<td align="right"><font size="2">' + table_upper[i]['count']['value'] + '</font></td></tr>';
+    }
+
+    for (var i = 0; i < table_sister.length; i++) {
+      var rank = table_sister[i]['rank']['value'].replace(/.*\//, '');
+      var sister_taxid = table_sister[i]['taxon']['value'].replace(/.*\//, '');
+      var label = table_sister[i]['label']['value'];
+      var sister_count = table_sister[i]['count']['value'];
+      var wiki = '';
+      if (table_sister[i]['dbpedia']) {
+        var dbpedia_uri = 'http://dbpedia.org/resource/' + table_sister[i]['dbpedia'];
+        if (dbpedia_labe_en[dbpedia_uri]) {
+          wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
+        }
+        if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
+          var label_local = dbpedia_labe_local[dbpedia_uri];
+          wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
+        }
+      }
+      var rank_orig = rank;
+      if (sister_taxid == taxid) {
+        rank = '<b>' + rank + '</b>';
+      }
+      var mark = '';
+      if (sister_taxid == taxid) {
+        mark = '-&ensp;';
+      } else {
+        mark = '+ ';
+      }
+      if (rank_orig == 'Superkingdom') {
+      } else {
+        mark = '&ensp;' + mark;
+      }
+      // if (rank_orig == 'Species') {
+      //     // mark = '&emsp;&ensp;';
+      //     mark = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+      // }
+
+      if (sister_taxid == taxid) {
+        label = '<td nowrap><i><b>' + label + '</b></i></td>';
+        html += '<tr bgcolor="#E3E3E3"><td nowrap>';
+      } else {
         label = '<td class="taxon_clickable" nowrap><i>' + label + '</i></td>';
-        html += '<tr><td class="rank_clickable" nowrap>' +
-          rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
-          '<td align="right"><font size="2">' + lower_count + '</font></td></tr>';
+        html += '<tr><td class="rank_clickable" nowrap>';
+      }
+      html += mark + rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
+        '<td align="right"><font size="2">' + sister_count + '</font></td>' + '</tr>';
+
+      if (sister_taxid == taxid) {
+        main_count = sister_count;
+        for (var j = 0; j < table_lower.length; j++) {
+          var rank = table_lower[j]['rank']['value'].replace(/.*\//, '');
+          var label = table_lower[j]['label']['value'];
+          var lower_count = table_lower[j]['count']['value'];
+          var wiki = '';
+          if (table_lower[j]['dbpedia']) {
+            var dbpedia_uri = 'http://dbpedia.org/resource/' + table_lower[j]['dbpedia'];
+            if (dbpedia_labe_en[dbpedia_uri]) {
+              wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
+            }
+            if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
+              var label_local = dbpedia_labe_local[dbpedia_uri];
+              wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
+            }
+          }
+          // if (rank == "Species" && rank_orig == "Genus") {
+          rank = '&emsp;&emsp;&emsp;' + rank;
+          // } else if (rank == "Superkingdom") {
+          //     rank = '+ ' + rank;
+          // } else {
+          //     rank = '&emsp;&emsp;+ ' + rank;
+          // }
+          label = '<td class="taxon_clickable" nowrap><i>' + label + '</i></td>';
+          html += '<tr><td class="rank_clickable" nowrap>' +
+            rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
+            '<td align="right"><font size="2">' + lower_count + '</font></td></tr>';
+        }
       }
     }
-  }
-  html += '</table>';
+    html += '</table>';
 
-  $('#taxonomy_div').html(html);
+    $('#taxonomy_div').html(html);
 
-  return main_count;
+    let count_unit = 'proteome';
+    if (main_count >= 2) {
+      count_unit = 'proteomes';
+    }
+    $('#sub_title_div').html(`<font size="2"><b>&emsp;Found ${main_count} ${count_unit}</b><br><br></font>`);
+  });
 }
 
 function show_dbpedia(taxon_name, taxid, local_lang) {
