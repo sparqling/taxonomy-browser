@@ -11,10 +11,10 @@ WHERE {
   {
     SELECT (COUNT(DISTINCT ?organism) AS ?count) ?taxon
     WHERE {
-      ?organism up:organism ?taxid ;
+      ?organism up:organism ?up_taxid ;
           rdfs:label ?org_label ;
           a up:Proteome .
-      ?taxid rdfs:subClassOf? ?taxon .
+      ?up_taxid rdfs:subClassOf? ?taxon .
     }
   }
 }
