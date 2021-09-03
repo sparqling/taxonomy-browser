@@ -3,7 +3,7 @@ PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?dbpedia_resource ?label_local ?label_en
 WHERE {
-    VALUES (?dbpedia_resource) { $taxid }
+    VALUES (?dbpedia_resource) { {{ taxid }} }
     OPTIONAL {
         ?dbpedia_resource dbo:wikiPageRedirects?/rdfs:label ?label_local .
         FILTER(lang(?label_local) = "{{ local_lang }}")
