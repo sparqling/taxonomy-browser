@@ -8,7 +8,17 @@ const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/main/spar
 function queryBySpang(queryUrl, param, callback, target_end = null) {
   spang.getTemplate(queryUrl, (query) => {
     spang.query(query, target_end ? target_end : endpoint, { param: param, format: 'json' }, (errror, status, result) => {
-      callback(JSON.parse(result));
+      let resultJson;
+      try {
+        resultJson = JSON.parse(result);
+      } catch (e) {
+        resultJson = { results:
+                       {
+                         bindings: {}
+                       }
+                     };
+      }
+      callback(resultJson);
     });
   });
 }
@@ -119,20 +129,19 @@ $(function () {
 
   // Manipulate the genome "cart"
   $(document).on('click', '.add_genome', function () {
-    var this_row = $(this).parent().parent();
+    var this_row = $(this).closest('tr');
     // Selected item
     var proteome_id = this_row.find('td:nth-child(3)').text();
+    console.log(proteome_id);
     // var orgname = this_row.find('td:nth-child(7)').text();
-    var orgname = $(this).closest('tr').html();
+    var orgname = this_row.html();
 
     if (localStorage.getItem(proteome_id)) {
       // Delete the item
       localStorage.removeItem(proteome_id);
-      $(this).children('img').attr('src', 'img/plus.png');
     } else {
       // Add the item
       localStorage.setItem(proteome_id, orgname);
-      $(this).children('img').attr('src', 'img/minus.png');
     }
 
     // Draw table
@@ -141,20 +150,14 @@ $(function () {
 
   $(document).on('click', '.add_genome_all', function () {
     // Swith the icon
-    if ($(this).children('img').attr('src') == 'img/plus.png') {
-      $(this).children('img').attr('src', 'img/minus.png');
-      var selected = 1;
-    } else {
-      $(this).children('img').attr('src', 'img/plus.png');
-      var selected = 0;
-    }
+    let selected = $(this).prop("checked");
     for (var i = 0; i < $('.add_genome').length; i++) {
-      var each_icon = $('.add_genome').eq(i);
-      var each_row = each_icon.parent().parent();
+      var each_checkbox = $('.add_genome').eq(i);
+      var each_row = each_checkbox.closest('tr');
       // Eech item
       var proteome_id = each_row.find('td:nth-child(3)').text();
       // var orgname = each_row.find('td:nth-child(7)').text();
-      var orgname = each_icon.closest('tr').html();
+      var orgname = each_row.html();
 
       if (selected) {
         // Add the item
@@ -162,14 +165,14 @@ $(function () {
           localStorage.setItem(proteome_id, orgname);
         }
         // Swith the icon
-        each_icon.children('img').attr('src', 'img/minus.png');
+        each_checkbox.prop("checked", true);
       } else {
         // Delete the item
         if (localStorage.getItem(proteome_id)) {
           localStorage.removeItem(proteome_id);
         }
         // Swith the icon
-        each_icon.children('img').attr('src', 'img/plus.png');
+        each_checkbox.prop("checked", false);
       }
     }
 
@@ -562,8 +565,7 @@ function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_g
   if (assembly) {
     assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + assembly;
   }
-  var sign_png = localStorage.getItem(up_id) ? 'img/minus.png' : 'img/plus.png';
-  var button_img = '<img src="' + sign_png + '" border="0" height="15" width="15">';
+  let checkedAttr = localStorage.getItem(up_id) ? "checked" : "";
 
   let scientific_name = organism_name;
   let common_name = '';
@@ -574,7 +576,7 @@ function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_g
   let name = `<i>${scientific_name}</i> ${common_name}`;
 
   let list_html = '<tr>';
-  list_html += '<td align="center"><button type="button" class="add_genome" title="Select">' + button_img + '</button></td>';
+  list_html += `<td align="center"><input type="checkbox" class="add_genome" ${checkedAttr} title="Select"></td>`;
   if (types.match(/Reference_Proteome/)) {
     list_html += '<td align="center"> &#9675 </td>';
   } else {
@@ -638,13 +640,8 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
       }
     }
 
-    let header_button_img = 'img/plus.png';
-    if (count_selected_rows == count) {
-      header_button_img = 'img/minus.png';
-    }
     let list_header = '<thead><tr>' +
-        '<th align="center"><button type="button" class="add_genome_all" title="Select all">' +
-        `<img src="${header_button_img}" border="0" height="15" width="15">` + '</button></th>' +
+        '<th align="center"><input type="checkbox" class="add_genome_all" title="Select all"></th>' +
         '<th>Ref</th>' +
         // '<th>Rep</th>' +
         '<th>Proteome ID</th>' +
@@ -770,8 +767,6 @@ function saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid
   if (assembly) {
     assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + assembly;
   }
-  var sign_png = 'img/minus.png';
-  var button_img = '<img src="' + sign_png + '" border="0" height="15" width="15">';
 
   let scientific_name = organism_name;
   let common_name = '';
@@ -782,7 +777,7 @@ function saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid
   let name = `<i>${scientific_name}</i> ${common_name}`;
 
   let list_html = '<tr>';
-  list_html += '<td align="center"><button type="button" class="add_genome" title="Select">' + button_img + '</button></td>';
+  list_html += '<td align="center"><input type="checkbox" class="add_genome" title="Select"></td>';
   if (types.match(/Reference_Proteome/)) {
     list_html += '<td align="center"> &#9675 </td>';
   } else {
