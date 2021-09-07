@@ -1,6 +1,5 @@
 var haystack = [];
 
-const sparql_search = 'https://orth.dbcls.jp/ver/sparql_search.php';
 const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
 const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/main/sparql/'
@@ -439,7 +438,7 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
     return;
   }
 
-  $.getJSON(sparql_search + '?dbpedia_entry=' + dbpedia.uri + '&local_lang=' + local_lang, function (data) {
+  queryBySpang(`${sparql_dir}/dbpedia_entry.rq`, { entry: dbpedia.uri, lang_list: local_lang == 'en' ? '' : `("${local_lang}")` }, function (data) {  
     var data_p = data['results']['bindings'];
     var img = '';
     var abst = '';
@@ -496,14 +495,14 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
       html += '</table>';
       $('#dbpedia_div').html(html);
     }
-  });
+  }, dbpedia_endpoint);
 }
 
 function show_genome_comparison(taxid) {
   var mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
 
   var count_compared = 0;
-  $.getJSON(sparql_search + '?taxid_to_get_dataset=' + taxid, function (data) {
+  queryBySpang(`${sparql_dir}/taxid_to_get_dataset.rq`, { taxid }, function (data) {
     var data_p = data['results']['bindings'];
     for (var i = 0; i < data_p.length; i++) {
       count_compared = data_p[i]['count']['value'];
@@ -532,7 +531,7 @@ function show_genome_comparison(taxid) {
 }
 
 function show_specific_genes(taxid) {
-  $.getJSON(sparql_search + '?taxon_to_default_orgs=' + taxid, function (data) {
+  queryBySpang(`${sparql_dir}/taxon_to_default_orgs.rq`, { taxid }, function (data) {
     var data_p = data['results']['bindings'];
     var count_default = 0;
     for (var i = 0; i < data_p.length; i++) {
@@ -605,8 +604,8 @@ function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_g
 
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
   var count = 0;
-
-  $.getJSON(sparql_search + '?taxon_to_search_genomes=' + taxid + '&genome_type_to_search=' + genome_type, function (data) {
+  
+  queryBySpang(`${sparql_dir}/taxon_to_search_genomes.rq`, { target_taxid: taxid }, function (data) {
     var data_p = data['results']['bindings'];
     count = data_p.length;
 
@@ -739,7 +738,7 @@ function setDefaultSpeciesList() {
       let values = text.split('\n').map(line => line.split('\t')[5])
           .filter(elem => elem.startsWith('UP0')).map(elem => `(proteome:${elem})`)
           .join(' ');
-      $.getJSON(sparql_search + '?search_genomes_for_values=' + values, function (data) {
+      queryBySpang(`${sparql_dir}/search_genomes_for_values.rq`, { values: values }, function (data) {
         const data_p = data['results']['bindings'];
         count = data_p.length;
         for (var i = 0; i < count; i++) {
