@@ -1,15 +1,14 @@
 var haystack = [];
 
 const sparql_search = 'https://orth.dbcls.jp/ver/sparql_search.php';
+const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
+const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/main/sparql/'
 
-function queryToEndpoint(query, callback) {
-  $.getJSON(`${endpoint}?query=${encodeURIComponent(query)}`, callback);
-}
 
-function queryBySpang(queryUrl, param, callback) {
+function queryBySpang(queryUrl, param, callback, target_end = null) {
   spang.getTemplate(queryUrl, (query) => {
-    spang.query(query, endpoint, { param: param, format: 'json' }, (errror, status, result) => {
+    spang.query(query, target_end ? target_end : endpoint, { param: param, format: 'json' }, (errror, status, result) => {
       callback(JSON.parse(result));
     });
   });
@@ -24,7 +23,7 @@ function init() {
   haystack = [];
   $.ajaxSetup({ async: false });
 
-  queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/get_taxa_as_candidates.rq", {}, function (data) {
+  queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, function (data) {
     for (let binding of data.results.bindings) {
       haystack.push(binding.name.value);
     }
@@ -193,7 +192,7 @@ function show_contents(taxon_name) {
   var rank;
 
   
-  queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/scientific_name_to_taxid.rq", { taxon_name }, function (data) {
+  queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, { taxon_name }, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
     taxid = RegExp.$1;
     rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
@@ -255,7 +254,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   var table_sister = [];
 
   let upper_promise = new Promise((resolve, reject) => {
-    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_upper.rq", { taxid }, function (data) {
+    queryBySpang(`${sparql_dir}/taxid_to_get_upper.rq`, { taxid }, function (data) {
       var data_p = data['results']['bindings'];
       for (var i = 0; i < data_p.length; i++) {
         table_upper[i] = data_p[i];
@@ -270,7 +269,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   let lower_promise = new Promise((resolve, reject) => {
-    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_lower.rq", { taxid }, function (data) {
+    queryBySpang(`${sparql_dir}/taxid_to_get_lower.rq`, { taxid }, function (data) {
       var data_p = data['results']['bindings'];
       for (var i = 0; i < data_p.length; i++) {
         table_lower[i] = data_p[i];
@@ -285,7 +284,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   let sister_promise = new Promise((resolve, reject) => {
-    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_sisters.rq", { taxid }, function (data) {
+    queryBySpang(`${sparql_dir}/taxid_to_get_sisters.rq`, { taxid }, function (data) {
       var data_p = data['results']['bindings'];
       for (var i = 0; i < data_p.length; i++) {
         table_sister[i] = data_p[i];
@@ -303,23 +302,25 @@ function show_hierarchy(taxid, genome_type, lang) {
   var dbpedia_labe_en = {};
   var dbpedia_labe_local = {};
   let local_promise = new Promise((resolve, reject) => {
-    queryBySpang("https://github.com/sparqling/taxonomy-browser/blob/main/sparql/taxid_to_get_local.rq", { taxid: list, local_lang: lang }, function (data) {
-      var data_p = data['results']['bindings'];
-      for (var i = 0; i < data_p.length; i++) {
-        var dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
-        if (data_p[i]['label_en']) {
+    Promise.all([upper_promise, lower_promise, sister_promise]).then(() => {
+      queryBySpang(`${sparql_dir}/taxid_to_get_local.rq`, { taxid: list, local_lang: lang }, function (data) {
+        var data_p = data['results']['bindings'];
+        for (var i = 0; i < data_p.length; i++) {
+          var dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
+          if (data_p[i]['label_en']) {
           dbpedia_labe_en[dbpedia_uri] = data_p[i]['label_en']['value'];
         }
-        if (data_p[i]['label_local'] && lang != 'en') {
-          dbpedia_labe_local[dbpedia_uri] = data_p[i]['label_local']['value'];
+          if (data_p[i]['label_local'] && lang != 'en') {
+            dbpedia_labe_local[dbpedia_uri] = data_p[i]['label_local']['value'];
+          }
         }
-      }
-      resolve();
-    })
+        resolve();
+      }, dbpedia_endpoint)
+    });
   });
   
   let main_count = 0;
-  Promise.all([upper_promise, lower_promise, local_promise, sister_promise]).then(() => {
+  local_promise.then(() => {
     // Show tables
     var html = '<table id="taxonomy" class="hierarchy" border="1">';
     html += '<tr><th colspan="3">Taxonomic hierarchy</th>';
