@@ -1,4 +1,5 @@
 var haystack = [];
+let currentTaxonName = null;
 
 const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
@@ -182,6 +183,10 @@ $(function () {
 });
 
 function show_contents(taxon_name) {
+  if(currentTaxonName === taxon_name)
+    return;
+  currentTaxonName = taxon_name;
+  
   var lang = ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || navigator.browserLanguage).substr(0, 2);
   // var lang = 'en';
   var genome_type = 'CompleteGenome';
@@ -193,7 +198,6 @@ function show_contents(taxon_name) {
   var taxid;
   var rank;
 
-  
   queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, { taxon_name }, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
     taxid = RegExp.$1;
@@ -672,27 +676,19 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
 
     $('#counter_div').html(count_html);
 
-    $('#details').html(list_header + list_html);
+    $('#details_div').html('<table border="1" id="details" class="tablesorter">' + list_header + list_html + '</table>');
 
-    $(function () {
-      $.tablesorter.addParser({
-        id: 'fancyNumber',
-        is: function (s) {
-          return /^[0-9]?[0-9,\.]*$/.test(s);
-        },
-        format: function (s) {
-          return $.tablesorter.formatFloat(s.replace(/,/g, ''));
-        },
-        type: 'numeric'
-      });
-      $('#details').tablesorter({
-        headers: {
-          0: { sorter: false },
-          6: { sorter: 'fancyNumber' },
-          7: { sorter: 'fancyNumber' }
-        }
-      });
+    $('#details').tablesorter({
+      headers: {
+        0: { sorter: false },
+        6: { sorter: 'fancyNumber' },
+        7: { sorter: 'fancyNumber' }
+      }
     });
+
+    var detailTable = $('#details');
+    $.tablesorter.clearTableBody( detailTable[0] );
+    detailTable.append(list_html).trigger('update');
   });
 
   return count;
@@ -799,3 +795,16 @@ function saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid
 
   localStorage.setItem(up_id, list_html);
 }
+
+$(() => {
+  $.tablesorter.addParser({
+    id: 'fancyNumber',
+    is: function (s) {
+      return /^[0-9]?[0-9,\.]*$/.test(s);
+    },
+    format: function (s) {
+      return $.tablesorter.formatFloat(s.replace(/,/g, ''));
+    },
+    type: 'numeric'
+  });
+});
