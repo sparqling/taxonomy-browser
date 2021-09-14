@@ -1,6 +1,7 @@
 var haystack = [];
 let currentTaxonName = null;
-let scientificNameMap = {};
+let scientificNameMap = {}; // Display name => Scientific name
+let displayNameMap = {}; // Scientific name => Display name
 
 const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
@@ -46,6 +47,7 @@ function init() {
       if(binding.commonName?.value) {
         entry += ` (${binding.commonName.value})`;
         scientificNameMap[entry] = binding.name.value;
+        displayNameMap[binding.name.value] = entry;
       }
       haystack.push(entry);
     }
@@ -109,7 +111,7 @@ $(function () {
   $('#taxonomy_div').on('click', '.taxon_clickable', function (e) {
     var taxon_name = $(this).text();
     if (taxon_name) {
-      $('#tags').val(taxon_name);
+      $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
     }
   });
@@ -126,7 +128,7 @@ $(function () {
   $('#taxonomy_div').on('click', '.rank_clickable', function (e) {
     var taxon_name = $(this).parent().find('td:nth-child(2)').text();
     if (taxon_name) {
-      $('#tags').val(taxon_name);
+      $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
       $('#tags').focus();
     }
