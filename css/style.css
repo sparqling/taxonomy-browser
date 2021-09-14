@@ -15,7 +15,7 @@ table.tablesorter thead tr th, table.tablesorter tfoot tr th {
 	font-size: 12pt;
 	padding: 1px;
 }
-table.tablesorter thead tr .header {
+table.tablesorter thead tr .tablesorter-header {
 	font-family:Arial;
 	cursor: row-resize;
 }
@@ -28,17 +28,13 @@ table.tablesorter tbody td {
 table.tablesorter tbody tr.odd td {
 	background-color:#F0F0F6;
 }
-table.tablesorter thead tr .headerSortUp {
-    /* background-color: cornsilk; */
+table.tablesorter thead tr .tablesorter-headerAsc {
     background-color: linen;
-    /* background-color: seashell; */
 }
 table.tablesorter thead tr .tablesorter-headerDesc {
     background-color: beige;
 }
-table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
-    /* background-color: #8fbc8f; */
-}
+
 
 #dbpedia {
     font-family:Arial;

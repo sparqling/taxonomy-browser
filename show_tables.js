@@ -119,12 +119,11 @@ $(function () {
     }
   });
 
-  $('#details').on('mouseover', '.genome_name', function (e) {
+  $(document).on('mouseover', '#details .genome_name', function (e) {
     $(this).parent().find('td').css('background-color', '#f0f0f0');
-    // $(this).css('background-color','#e6e6e6');
     $(this).css('background-color', '#e3e3e3');
   });
-  $('#details').on('mouseout', '.genome_name', function (e) {
+  $(document).on('mouseout', '#details .genome_name', function (e) {
     $(this).parent().find('td').css('background-color', '#fff');
   });
 
