@@ -39,10 +39,6 @@ function init() {
     }
   });
 
-  var taxon_name = $('#tags').val();
-  if (taxon_name) {
-    show_contents(taxon_name);
-  }
   $('#tags').focus();
 }
 
@@ -196,6 +192,8 @@ function show_contents(taxon_name) {
   // Get tax ID
   var taxid;
   var rank;
+
+  history.pushState({ taxon_name }, taxon_name, `?taxon_name=${taxon_name}`)
 
   queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, { taxon_name }, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
@@ -806,4 +804,15 @@ $(() => {
     },
     type: 'numeric'
   });
+
+  window.onpopstate = function(event) {
+//    alert(`location: ${document.location}, state: ${JSON.stringify(event.state)}`)
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  let taxonName = urlParams.get('taxon_name')
+  if(taxonName) {
+    $('#tags').val(taxonName);
+    show_contents(taxonName);
+  }
 });
