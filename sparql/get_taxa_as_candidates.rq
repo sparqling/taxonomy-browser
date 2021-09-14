@@ -3,7 +3,7 @@ PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX upTax: <http://purl.uniprot.org/taxonomy/>
 PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
 
-SELECT ?name
+SELECT ?name ?commonName
 WHERE {
   {
     SELECT ?taxon (COUNT(?proteome) AS ?count)
@@ -17,5 +17,11 @@ WHERE {
   ?taxon up:scientificName ?name ;
       up:rank ?rank .
   ?rank ortho:taxRankDepth ?depth .
+
+  ?taxon rdfs:subClassOf upTax:2759.
+
+  OPTIONAL {
+    ?taxon up:commonName ?commonName.
+  }
 }
 ORDER BY DESC(?count) ?depth ?name
