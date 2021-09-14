@@ -3,7 +3,7 @@ PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX upTax: <http://purl.uniprot.org/taxonomy/>
 PREFIX ortho: <https://orth.dbcls.jp/rdf/ontology#>
 
-SELECT ?depth ?name (?taxon AS ?taxid) ?count
+SELECT ?name
 WHERE {
   {
     SELECT ?taxon (COUNT(?proteome) AS ?count)
