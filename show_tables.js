@@ -1,9 +1,11 @@
 var haystack = [];
 let currentTaxonName = null;
+let scientificNameMap = {}; // Display name => Scientific name
+let displayNameMap = {}; // Scientific name => Display name
 
 const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
-const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/7abfb0d/sparql/'
+const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/sparql/'
 
 
 function queryBySpang(queryUrl, param, callback, target_end = null) {
@@ -24,6 +26,11 @@ function queryBySpang(queryUrl, param, callback, target_end = null) {
   });
 }
 
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+
 function init() {
   var genome_type = 'CompleteGenome';
   if ($('#draft').prop('checked')) {
@@ -34,20 +41,28 @@ function init() {
   $.ajaxSetup({ async: false });
 
   queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, function (data) {
+    scientificNameMap = {};
     for (let binding of data.results.bindings) {
-      haystack.push(binding.name.value);
+      let entry = binding.name.value;
+      if(binding.commonName?.value) {
+        entry += ` (${binding.commonName.value})`;
+        scientificNameMap[entry] = binding.name.value;
+        displayNameMap[binding.name.value] = entry;
+      }
+      haystack.push(entry);
     }
   });
 
   $('#tags').focus();
 }
 
+
 $(function () {
   $('#tags').autocomplete({
     source: function (request, response) {
       response(
         $.grep(haystack, function (value) {
-          var regexp = new RegExp('\\b' + request.term, 'i');
+          var regexp = new RegExp('\\b' + escapeRegExp(request.term), 'i');
           return value.match(regexp);
         })
       );
@@ -92,7 +107,7 @@ $(function () {
   $('#taxonomy_div').on('click', '.taxon_clickable', function (e) {
     var taxon_name = $(this).text();
     if (taxon_name) {
-      $('#tags').val(taxon_name);
+      $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
     }
   });
@@ -109,7 +124,7 @@ $(function () {
   $('#taxonomy_div').on('click', '.rank_clickable', function (e) {
     var taxon_name = $(this).parent().find('td:nth-child(2)').text();
     if (taxon_name) {
-      $('#tags').val(taxon_name);
+      $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
       $('#tags').focus();
     }
@@ -178,6 +193,7 @@ $(function () {
 });
 
 function show_contents(taxon_name) {
+  taxon_name = scientificNameMap[taxon_name] || taxon_name;
   if(currentTaxonName === taxon_name)
     return;
   currentTaxonName = taxon_name;
