@@ -663,9 +663,9 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
         '<th align="center"><input type="checkbox" class="add_genome_all" title="Select all"></th>' +
         '<th>Ref</th>' +
         // '<th>Rep</th>' +
-        '<th>Proteome ID</th>' +
+        '<th style="min-width: 6em">Proteome ID</th>' +
         '<th>Genome ID</th>' +
-        '<th>Tax ID</th>' +
+        '<th style="min-width: 3em">Tax ID</th>' +
         '<th>Species Name</th>' +
         '<th>Genes</th>' +
         '<th>Isoforms</th>' +
