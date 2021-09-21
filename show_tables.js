@@ -15,6 +15,7 @@ function queryBySpang(queryUrl, param, callback, target_end = null) {
       try {
         resultJson = JSON.parse(result);
       } catch (e) {
+        console.log(e);
         resultJson = { results:
                        {
                          bindings: {}
