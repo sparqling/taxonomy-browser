@@ -211,12 +211,12 @@ function show_contents(taxon_name, display_name = null, push_state = true) {
     return;
   currentTaxonName = taxon_name;
   
-  var lang = ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || navigator.browserLanguage).substr(0, 2);
-  // var lang = 'en';
   var genome_type = 'CompleteGenome';
   if ($('#draft').prop('checked')) {
     genome_type = 'Genome';
   }
+  
+  let lang = document.querySelector('#language-selector').value;
 
   // Get tax ID
   var taxid;
@@ -835,6 +835,18 @@ $(() => {
       return $.tablesorter.formatFloat(s.replace(/,/g, ''));
     },
     type: 'numeric'
+  });
+
+  let defaultLang = localStorage.getItem('language');
+  defaultLang = defaultLang || ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || navigator.browserLanguage).substr(0, 2);
+  let defaultOption = document.querySelector(`.language-option[value="${defaultLang}"]`);
+  if(defaultOption)
+    defaultOption.selected = 'selected';
+  
+  $('#language-selector').on('change', (e) => {
+    localStorage.setItem('language', e.target.value);
+    currentTaxonName = null; // Forciblly reload current taxon
+    load_url_state(false);
   });
 
   show_selected_genome();

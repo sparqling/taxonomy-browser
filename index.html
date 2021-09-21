@@ -17,19 +17,16 @@
         <div class="ui-widget">
 
             <!-- Logo and input forms -->
-            <table width="100%">
-                <tr><td>
-                    <table>
-	                    <tr>
-	                        <td><label id="input_label" for="tags">Search Taxon:</label><input id="tags"></td>
-	                        <tr>
-                    </table>
-                </td>
-                <td>
-                    <table id="selected_genome" align="right" cellspacing="3">
-                    </table>
-                </td></tr>
-            </table>
+            <label id="input_label" for="tags">Search Taxon: </label><input id="tags">
+            <div style="float: right; display: flex; align-items: center">
+                <label for="language-selector">Language: </label>
+                <select id="language-selector" style="margin: 0 2em 0 0 ">
+                    <option class="language-option" value="en">English</option>
+                    <option class="language-option" value="ja">日本語</option>
+                </select>
+                <table id="selected_genome" align="right" cellspacing="3">
+                </table>
+            </div>
 
             <!-- Main titles -->
             <div id="main_taxon_name_div"></div>
