@@ -1,6 +1,7 @@
 var haystack = [];
 let currentTaxonName = null;
-let scientificNameMap = {};
+let scientificNameMap = {}; // Display name => Scientific name
+let displayNameMap = {}; // Scientific name => Display name
 
 const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
@@ -46,15 +47,12 @@ function init() {
       if(binding.commonName?.value) {
         entry += ` (${binding.commonName.value})`;
         scientificNameMap[entry] = binding.name.value;
+        displayNameMap[binding.name.value] = entry;
       }
       haystack.push(entry);
     }
   });
 
-  var taxon_name = $('#tags').val();
-  if (taxon_name) {
-    show_contents(taxon_name);
-  }
   $('#tags').focus();
 }
 
@@ -109,7 +107,7 @@ $(function () {
   $('#taxonomy_div').on('click', '.taxon_clickable', function (e) {
     var taxon_name = $(this).text();
     if (taxon_name) {
-      $('#tags').val(taxon_name);
+      $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
     }
   });
@@ -126,7 +124,7 @@ $(function () {
   $('#taxonomy_div').on('click', '.rank_clickable', function (e) {
     var taxon_name = $(this).parent().find('td:nth-child(2)').text();
     if (taxon_name) {
-      $('#tags').val(taxon_name);
+      $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
       $('#tags').focus();
     }
@@ -194,7 +192,20 @@ $(function () {
   });
 });
 
-function show_contents(taxon_name) {
+function clear_tables() {
+  $('#main_taxon_name_div').html('');
+  $('#sub_title_div').html('');
+  $('#taxonomy_div').html('');
+  $('#dbpedia_div').html('');
+  $('#genome_comparison_div').html('');
+  $('#specific_genes_div').html('');
+  $('#counter_div').html('');
+  $('#details').attr('border', '0');
+  $('#details').html('');
+}
+
+function show_contents(taxon_name, display_name = null, push_state = true) {
+  display_name = display_name || taxon_name;
   taxon_name = scientificNameMap[taxon_name] || taxon_name;
   if(currentTaxonName === taxon_name)
     return;
@@ -210,6 +221,9 @@ function show_contents(taxon_name) {
   // Get tax ID
   var taxid;
   var rank;
+
+  if(push_state)
+    history.pushState({ taxon_name, display_name }, taxon_name, `?taxon_name=${taxon_name}&display_name=${display_name}`)
 
   queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, { taxon_name }, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
@@ -229,19 +243,7 @@ function show_contents(taxon_name) {
     $('#main_taxon_name_div').html(html);
   });
 
-  // Hide initial contents
-  $('#initial_input_label').text('');
-
-  // Show logo and label
-  $('#further_input_label').html('Search Taxon: ');
-
-  // Clear tables
-  $('#dbpedia_div').html('');
-  $('#genome_comparison_div').html('');
-  $('#specific_genes_div').html('');
-  $('#counter_div').html('');
-  $('#details').attr('border', '0');
-  $('#details').html('');
+  clear_tables();
 }
 
 function dbpedia_name(taxon_name) {
@@ -809,6 +811,20 @@ function saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid
   localStorage.setItem(up_id, list_html);
 }
 
+function load_url_state(push_state = true) {
+  const urlParams = new URLSearchParams(window.location.search);
+  let taxon_name = urlParams.get('taxon_name')
+  if(taxon_name) {
+    let display_name = urlParams.get('display_name')
+    $('#tags').val(display_name || taxon_name);
+    show_contents(taxon_name, display_name, push_state);
+  } else {
+    $('#tags').val('');
+    currentTaxonName = null;
+    clear_tables();
+  }
+}
+
 $(() => {
   $.tablesorter.addParser({
     id: 'fancyNumber',
@@ -820,4 +836,12 @@ $(() => {
     },
     type: 'numeric'
   });
+
+  show_selected_genome();
+
+  window.onpopstate = function(event) {
+    load_url_state(false);
+  }
+
+  load_url_state();
 });
