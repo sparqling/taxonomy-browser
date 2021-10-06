@@ -10,7 +10,7 @@ const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/s
 
 function queryBySpang(queryUrl, param, callback, target_end = null) {
   spang.getTemplate(queryUrl, (query) => {
-    spang.query(query, target_end ? target_end : endpoint, {param: param, format: 'json'}, (errror, status, result) => {
+    spang.query(query, target_end ? target_end : endpoint, {param: param, format: 'json'}, (error, status, result) => {
       let resultJson;
       try {
         resultJson = JSON.parse(result);
@@ -32,17 +32,11 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-
 function init() {
-  let genome_type = 'CompleteGenome';
-  if ($('#draft').prop('checked')) {
-    genome_type = 'Genome';
-  }
-
   haystack = [];
   $.ajaxSetup({async: false});
 
-  queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, function (data) {
+  queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, (data) => {
     scientificNameMap = {};
     for (let binding of data.results.bindings) {
       let entry = binding.name.value;
@@ -61,9 +55,9 @@ function init() {
 
 $(function () {
   $('#tags').autocomplete({
-    source: function (request, response) {
+    source: (request, response) => {
       response(
-        $.grep(haystack, function (value) {
+        $.grep(haystack, (value) => {
           let regexp = new RegExp('\\b' + escapeRegExp(request.term), 'i');
           return value.match(regexp);
         })
@@ -72,7 +66,7 @@ $(function () {
     autoFocus: true,
     delay: 100,
     minLength: 1,
-    select: function (e, ui) {
+    select: (e, ui) => {
       if (ui.item) {
         show_contents(ui.item['label']);
       }
@@ -80,15 +74,14 @@ $(function () {
   });
 
   // Type slash to focus on the text box
-  $(document).keyup(function (e) {
-    if ($(':focus').attr('id') != 'tags' && e.keyCode == 191) {
-      $('#tags').focus();
-      $('#tags').select();
+  $(document).keyup((e) => {
+    if ($(':focus').attr('id') !== 'tags' && e.keyCode === 191) {
+      $('#tags').focus().seletc();
     }
   });
 
-  $(document).keyup(function (e) {
-    if ($(':focus').attr('id') == 'tags' && e.keyCode == 13) {
+  $(document).keyup((e) => {
+    if ($(':focus').attr('id') === 'tags' && e.keyCode === 13) {
       let taxon_name = $('#tags').val();
       if (taxon_name) {
         show_contents(taxon_name);
@@ -101,16 +94,15 @@ $(function () {
     $(this).css('background-color', '#e3e3e3');
     // $(this).siblings().css('background-color','#f5f5f5');
     $(this).siblings().css('background-color', '#f0f0f0');
-  });
-  $('#taxonomy_div').on('mouseout', '.taxon_clickable', function (e) {
+  }).on('mouseout', '.taxon_clickable', function (e) {
     $(this).css('background-color', '#fff');
     $(this).siblings().css('background-color', '#fff');
-  });
-  $('#taxonomy_div').on('click', '.taxon_clickable', function (e) {
+  }).on('click', '.taxon_clickable', function (e) {
     let taxon_name = $(this).text();
     if (taxon_name) {
       $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
+      $('#tags').focus();
     }
   });
 
@@ -119,11 +111,9 @@ $(function () {
     // $(this).parent().find('td').css('background-color','#f5f5f5');
     $(this).parent().find('td').css('background-color', '#f0f0f0');
     $(this).parent().find('td:nth-child(2)').css('background-color', '#e3e3e3');
-  });
-  $('#taxonomy_div').on('mouseout', '.rank_clickable', function (e) {
+  }).on('mouseout', '.rank_clickable', function (e) {
     $(this).parent().find('td').css('background-color', '#fff');
-  });
-  $('#taxonomy_div').on('click', '.rank_clickable', function (e) {
+  }).on('click', '.rank_clickable', function (e) {
     let taxon_name = $(this).parent().find('td:nth-child(2)').text();
     if (taxon_name) {
       $('#tags').val(displayNameMap[taxon_name] || taxon_name);
@@ -144,8 +134,7 @@ $(function () {
   $(document).on('click', '.add_genome', function () {
     let this_row = $(this).closest('tr');
     // Selected item
-    let proteome_id = this_row.find('td:nth-child(3)').text();
-    console.log(proteome_id);
+    let proteome_id = this_row.find('td.proteome-id-td').text();
     // let orgname = this_row.find('td:nth-child(7)').text();
     let orgname = this_row.html();
 
@@ -164,11 +153,10 @@ $(function () {
   $(document).on('click', '.add_genome_all', function () {
     // Swith the icon
     let selected = $(this).prop("checked");
-    for (let i = 0; i < $('.add_genome').length; i++) {
-      let each_checkbox = $('.add_genome').eq(i);
-      let each_row = each_checkbox.closest('tr');
+    $('.add_genome').each((i, each_checkbox) => {
+      let each_row = $(each_checkbox).closest('tr');
       // Eech item
-      let proteome_id = each_row.find('td:nth-child(3)').text();
+      let proteome_id = each_row.find('td.proteome-id-td').text();
       // let orgname = each_row.find('td:nth-child(7)').text();
       let orgname = each_row.html();
 
@@ -177,18 +165,15 @@ $(function () {
         if (!localStorage.getItem(proteome_id)) {
           localStorage.setItem(proteome_id, orgname);
         }
-        // Swith the icon
-        each_checkbox.prop("checked", true);
+        $(each_checkbox).prop("checked", true);
       } else {
         // Delete the item
         if (localStorage.getItem(proteome_id)) {
           localStorage.removeItem(proteome_id);
         }
-        // Swith the icon
-        each_checkbox.prop("checked", false);
+        $(each_checkbox).prop("checked", false);
       }
-    }
-
+    });
     // Draw table
     show_selected_genome();
   });
@@ -403,7 +388,7 @@ function show_hierarchy(taxid, genome_type, lang) {
       //     mark = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
       // }
 
-      if (sister_taxid == taxid) {
+      if (sister_taxid === taxid) {
         label = '<td nowrap><i><b>' + label + '</b></i></td>';
         html += '<tr bgcolor="#E3E3E3"><td nowrap>';
       } else {
@@ -413,7 +398,7 @@ function show_hierarchy(taxid, genome_type, lang) {
       html += mark + rank + '</td>' + label + '<td nowrap><font size="2">' + wiki + '</font></td>' +
         '<td align="right"><font size="2">' + sister_count + '</font></td>' + '</tr>';
 
-      if (sister_taxid == taxid) {
+      if (sister_taxid === taxid) {
         main_count = sister_count;
         for (let j = 0; j < table_lower.length; j++) {
           let rank = table_lower[j]['rank']['value'].replace(/.*\//, '');
@@ -611,7 +596,7 @@ function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_g
   // } else {
   //   list_html += '<td> </td>';
   // }
-  list_html += `<td><a href="${up_id_url}" target="_blank">${up_id}</a></td>`;
+  list_html += `<td class="proteome-id-td"><a href="${up_id_url}" target="_blank">${up_id}</a></td>`;
   list_html += `<td><a href="${assembly_url}" target="_blank">${assembly}</a></td>`;
   list_html += '<td>' + genome_taxid + '</td>';
   list_html += '<td class="genome_name">' + name + '</td>';
