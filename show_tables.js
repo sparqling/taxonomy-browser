@@ -1,4 +1,4 @@
-var haystack = [];
+let haystack = [];
 let currentTaxonName = null;
 let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
@@ -33,7 +33,7 @@ function escapeRegExp(string) {
 
 
 function init() {
-  var genome_type = 'CompleteGenome';
+  let genome_type = 'CompleteGenome';
   if ($('#draft').prop('checked')) {
     genome_type = 'Genome';
   }
@@ -63,7 +63,7 @@ $(function () {
     source: function (request, response) {
       response(
         $.grep(haystack, function (value) {
-          var regexp = new RegExp('\\b' + escapeRegExp(request.term), 'i');
+          let regexp = new RegExp('\\b' + escapeRegExp(request.term), 'i');
           return value.match(regexp);
         })
       );
@@ -88,7 +88,7 @@ $(function () {
 
   $(document).keyup(function (e) {
     if ($(':focus').attr('id') == 'tags' && e.keyCode == 13) {
-      var taxon_name = $('#tags').val();
+      let taxon_name = $('#tags').val();
       if (taxon_name) {
         show_contents(taxon_name);
       }
@@ -106,7 +106,7 @@ $(function () {
     $(this).siblings().css('background-color', '#fff');
   });
   $('#taxonomy_div').on('click', '.taxon_clickable', function (e) {
-    var taxon_name = $(this).text();
+    let taxon_name = $(this).text();
     if (taxon_name) {
       $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
@@ -123,7 +123,7 @@ $(function () {
     $(this).parent().find('td').css('background-color', '#fff');
   });
   $('#taxonomy_div').on('click', '.rank_clickable', function (e) {
-    var taxon_name = $(this).parent().find('td:nth-child(2)').text();
+    let taxon_name = $(this).parent().find('td:nth-child(2)').text();
     if (taxon_name) {
       $('#tags').val(displayNameMap[taxon_name] || taxon_name);
       show_contents(taxon_name);
@@ -141,12 +141,12 @@ $(function () {
 
   // Manipulate the genome "cart"
   $(document).on('click', '.add_genome', function () {
-    var this_row = $(this).closest('tr');
+    let this_row = $(this).closest('tr');
     // Selected item
-    var proteome_id = this_row.find('td:nth-child(3)').text();
+    let proteome_id = this_row.find('td:nth-child(3)').text();
     console.log(proteome_id);
-    // var orgname = this_row.find('td:nth-child(7)').text();
-    var orgname = this_row.html();
+    // let orgname = this_row.find('td:nth-child(7)').text();
+    let orgname = this_row.html();
 
     if (localStorage.getItem(proteome_id)) {
       // Delete the item
@@ -163,13 +163,13 @@ $(function () {
   $(document).on('click', '.add_genome_all', function () {
     // Swith the icon
     let selected = $(this).prop("checked");
-    for (var i = 0; i < $('.add_genome').length; i++) {
-      var each_checkbox = $('.add_genome').eq(i);
-      var each_row = each_checkbox.closest('tr');
+    for (let i = 0; i < $('.add_genome').length; i++) {
+      let each_checkbox = $('.add_genome').eq(i);
+      let each_row = each_checkbox.closest('tr');
       // Eech item
-      var proteome_id = each_row.find('td:nth-child(3)').text();
-      // var orgname = each_row.find('td:nth-child(7)').text();
-      var orgname = each_row.html();
+      let proteome_id = each_row.find('td:nth-child(3)').text();
+      // let orgname = each_row.find('td:nth-child(7)').text();
+      let orgname = each_row.html();
 
       if (selected) {
         // Add the item
@@ -212,7 +212,7 @@ function show_contents(taxon_name, display_name = null, push_state = true) {
     return;
   currentTaxonName = taxon_name;
   
-  var genome_type = 'CompleteGenome';
+  let genome_type = 'CompleteGenome';
   if ($('#draft').prop('checked')) {
     genome_type = 'Genome';
   }
@@ -220,8 +220,8 @@ function show_contents(taxon_name, display_name = null, push_state = true) {
   let lang = document.querySelector('#language-selector').value;
 
   // Get tax ID
-  var taxid;
-  var rank;
+  let taxid;
+  let rank;
 
   if(push_state)
     history.pushState({ taxon_name, display_name }, taxon_name, `?taxon_name=${taxon_name}&display_name=${display_name}`)
@@ -240,7 +240,7 @@ function show_contents(taxon_name, display_name = null, push_state = true) {
     $('#details').attr('border', '1');
     show_selected_genome();
     // Show main taxon name
-    var html = `<h3><i>${taxon_name}</i> (Taxonomy ID: ${taxid})</h3>`;
+    let html = `<h3><i>${taxon_name}</i> (Taxonomy ID: ${taxid})</h3>`;
     $('#main_taxon_name_div').html(html);
   });
 
@@ -258,7 +258,7 @@ function dbpedia_name(taxon_name) {
     return { name: 'Pan_(genus)', uri: '<http://dbpedia.org/resource/Pan_(genus)>' };
   }
 
-  var dbpedia_name = taxon_name
+  let dbpedia_name = taxon_name
     .replace(/\s/g, '_')
     .replace(/^Candidatus_/, '')
     .replace(/\//g, '_')
@@ -270,17 +270,17 @@ function dbpedia_name(taxon_name) {
 }
 
 function show_hierarchy(taxid, genome_type, lang) {
-  var list = '';
-  var table_upper = [];
-  var table_lower = [];
-  var table_sister = [];
+  let list = '';
+  let table_upper = [];
+  let table_lower = [];
+  let table_sister = [];
 
   let upper_promise = new Promise((resolve, reject) => {
     queryBySpang(`${sparql_dir}/taxid_to_get_upper.rq`, { taxid }, function (data) {
-      var data_p = data['results']['bindings'];
-      for (var i = 0; i < data_p.length; i++) {
+      let data_p = data['results']['bindings'];
+      for (let i = 0; i < data_p.length; i++) {
         table_upper[i] = data_p[i];
-        var dbpedia = dbpedia_name(data_p[i]['label']['value']);
+        let dbpedia = dbpedia_name(data_p[i]['label']['value']);
         if (dbpedia) {
           table_upper[i]['dbpedia'] = dbpedia.name;
           list += '( ' + dbpedia.uri + ' )';
@@ -292,10 +292,10 @@ function show_hierarchy(taxid, genome_type, lang) {
 
   let lower_promise = new Promise((resolve, reject) => {
     queryBySpang(`${sparql_dir}/taxid_to_get_lower.rq`, { taxid }, function (data) {
-      var data_p = data['results']['bindings'];
-      for (var i = 0; i < data_p.length; i++) {
+      let data_p = data['results']['bindings'];
+      for (let i = 0; i < data_p.length; i++) {
         table_lower[i] = data_p[i];
-        var dbpedia = dbpedia_name(data_p[i]['label']['value']);
+        let dbpedia = dbpedia_name(data_p[i]['label']['value']);
         if (dbpedia) {
           table_lower[i]['dbpedia'] = dbpedia.name;
           list += '( ' + dbpedia.uri + ' )';
@@ -307,10 +307,10 @@ function show_hierarchy(taxid, genome_type, lang) {
 
   let sister_promise = new Promise((resolve, reject) => {
     queryBySpang(`${sparql_dir}/taxid_to_get_sisters.rq`, { taxid }, function (data) {
-      var data_p = data['results']['bindings'];
-      for (var i = 0; i < data_p.length; i++) {
+      let data_p = data['results']['bindings'];
+      for (let i = 0; i < data_p.length; i++) {
         table_sister[i] = data_p[i];
-        var dbpedia = dbpedia_name(data_p[i]['label']['value']);
+        let dbpedia = dbpedia_name(data_p[i]['label']['value']);
         if (dbpedia) {
           table_sister[i]['dbpedia'] = dbpedia.name;
           list += '( ' + dbpedia.uri + ' )';
@@ -321,14 +321,14 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   // Use DBpedia to translate
-  var dbpedia_labe_en = {};
-  var dbpedia_labe_local = {};
+  let dbpedia_labe_en = {};
+  let dbpedia_labe_local = {};
   let local_promise = new Promise((resolve, reject) => {
     Promise.all([upper_promise, lower_promise, sister_promise]).then(() => {
       queryBySpang(`${sparql_dir}/taxid_to_get_local.rq`, { taxid: list, local_lang: lang }, function (data) {
-        var data_p = data['results']['bindings'];
-        for (var i = 0; i < data_p.length; i++) {
-          var dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
+        let data_p = data['results']['bindings'];
+        for (let i = 0; i < data_p.length; i++) {
+          let dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
           if (data_p[i]['label_en']) {
           dbpedia_labe_en[dbpedia_uri] = data_p[i]['label_en']['value'];
         }
@@ -344,20 +344,20 @@ function show_hierarchy(taxid, genome_type, lang) {
   let main_count = 0;
   local_promise.then(() => {
     // Show tables
-    var html = '<table id="taxonomy" class="hierarchy" border="1">';
+    let html = '<table id="taxonomy" class="hierarchy" border="1">';
     html += '<tr><th colspan="3">Taxonomic hierarchy</th>';
     html += '<th align="center"><font size="2"><i>N</i></font></th></tr>';
-    for (var i = 0; i < table_upper.length; i++) {
-      var rank = table_upper[i]['rank']['value'].replace(/.*\//, '');
-      var label = table_upper[i]['label']['value'];
-      var wiki = '';
+    for (let i = 0; i < table_upper.length; i++) {
+      let rank = table_upper[i]['rank']['value'].replace(/.*\//, '');
+      let label = table_upper[i]['label']['value'];
+      let wiki = '';
       if (table_upper[i]['dbpedia']) {
-        var dbpedia_uri = 'http://dbpedia.org/resource/' + table_upper[i]['dbpedia'];
+        let dbpedia_uri = 'http://dbpedia.org/resource/' + table_upper[i]['dbpedia'];
         if (dbpedia_labe_en[dbpedia_uri]) {
           wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
         }
         if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
-          var label_local = dbpedia_labe_local[dbpedia_uri];
+          let label_local = dbpedia_labe_local[dbpedia_uri];
           wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
         }
       }
@@ -367,27 +367,27 @@ function show_hierarchy(taxid, genome_type, lang) {
         '<td align="right"><font size="2">' + table_upper[i]['count']['value'] + '</font></td></tr>';
     }
 
-    for (var i = 0; i < table_sister.length; i++) {
-      var rank = table_sister[i]['rank']['value'].replace(/.*\//, '');
-      var sister_taxid = table_sister[i]['taxon']['value'].replace(/.*\//, '');
-      var label = table_sister[i]['label']['value'];
-      var sister_count = table_sister[i]['count']['value'];
-      var wiki = '';
+    for (let i = 0; i < table_sister.length; i++) {
+      let rank = table_sister[i]['rank']['value'].replace(/.*\//, '');
+      let sister_taxid = table_sister[i]['taxon']['value'].replace(/.*\//, '');
+      let label = table_sister[i]['label']['value'];
+      let sister_count = table_sister[i]['count']['value'];
+      let wiki = '';
       if (table_sister[i]['dbpedia']) {
-        var dbpedia_uri = 'http://dbpedia.org/resource/' + table_sister[i]['dbpedia'];
+        let dbpedia_uri = 'http://dbpedia.org/resource/' + table_sister[i]['dbpedia'];
         if (dbpedia_labe_en[dbpedia_uri]) {
           wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
         }
         if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
-          var label_local = dbpedia_labe_local[dbpedia_uri];
+          let label_local = dbpedia_labe_local[dbpedia_uri];
           wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
         }
       }
-      var rank_orig = rank;
+      let rank_orig = rank;
       if (sister_taxid == taxid) {
         rank = '<b>' + rank + '</b>';
       }
-      var mark = '';
+      let mark = '';
       if (sister_taxid == taxid) {
         mark = '-&ensp;';
       } else {
@@ -414,18 +414,18 @@ function show_hierarchy(taxid, genome_type, lang) {
 
       if (sister_taxid == taxid) {
         main_count = sister_count;
-        for (var j = 0; j < table_lower.length; j++) {
-          var rank = table_lower[j]['rank']['value'].replace(/.*\//, '');
-          var label = table_lower[j]['label']['value'];
-          var lower_count = table_lower[j]['count']['value'];
-          var wiki = '';
+        for (let j = 0; j < table_lower.length; j++) {
+          let rank = table_lower[j]['rank']['value'].replace(/.*\//, '');
+          let label = table_lower[j]['label']['value'];
+          let lower_count = table_lower[j]['count']['value'];
+          let wiki = '';
           if (table_lower[j]['dbpedia']) {
-            var dbpedia_uri = 'http://dbpedia.org/resource/' + table_lower[j]['dbpedia'];
+            let dbpedia_uri = 'http://dbpedia.org/resource/' + table_lower[j]['dbpedia'];
             if (dbpedia_labe_en[dbpedia_uri]) {
               wiki += '<a target="_blank" href="http://en.wikipedia.org/wiki/' + dbpedia_name(dbpedia_labe_en[dbpedia_uri]).name + '">*</a> ';
             }
             if (dbpedia_labe_local[dbpedia_uri] && lang != 'en') {
-              var label_local = dbpedia_labe_local[dbpedia_uri];
+              let label_local = dbpedia_labe_local[dbpedia_uri];
               wiki += '<a target="_blank" href="http://' + lang + '.wikipedia.org/wiki/' + label_local + '">' + label_local + '</a>';
             }
           }
@@ -456,19 +456,19 @@ function show_hierarchy(taxid, genome_type, lang) {
 }
 
 function show_dbpedia(taxon_name, taxid, local_lang) {
-  var dbpedia = dbpedia_name(taxon_name);
+  let dbpedia = dbpedia_name(taxon_name);
   if (!dbpedia) {
     return;
   }
 
   queryBySpang(`${sparql_dir}/dbpedia_entry.rq`, { entry: dbpedia.uri, lang_list: local_lang == 'en' ? '' : `("${local_lang}")` }, function (data) {  
-    var data_p = data['results']['bindings'];
-    var img = '';
-    var abst = '';
-    var abst_local = '';
-    var label_local = '';
-    var wiki = '';
-    for (var i = 0; i < data_p.length; i++) {
+    let data_p = data['results']['bindings'];
+    let img = '';
+    let abst = '';
+    let abst_local = '';
+    let label_local = '';
+    let wiki = '';
+    for (let i = 0; i < data_p.length; i++) {
       if (!wiki) {
         wiki = data_p[i]['wiki']['value'];
       }
@@ -477,7 +477,7 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
       }
       if (!abst && data_p[i]['abst']['xml:lang'] == 'en') {
         abst = data_p[i]['abst']['value'];
-        var max_len = 800;
+        let max_len = 800;
         if (abst.length > max_len) {
           abst = abst.substr(0, max_len).replace(/\S+$/, '') + ' ...';
         }
@@ -489,7 +489,7 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
         label_local = data_p[i]['label']['value'];
       }
     }
-    var html = '';
+    let html = '';
     if (wiki) {
       html += '<table id="dbpedia" border="1">';
       html += '<tr><td>';
@@ -522,21 +522,21 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
 }
 
 function show_genome_comparison(taxid) {
-  var mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
+  let mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
 
-  var count_compared = 0;
+  let count_compared = 0;
   queryBySpang(`${sparql_dir}/taxid_to_get_dataset.rq`, { taxid }, function (data) {
-    var data_p = data['results']['bindings'];
-    for (var i = 0; i < data_p.length; i++) {
+    let data_p = data['results']['bindings'];
+    for (let i = 0; i < data_p.length; i++) {
       count_compared = data_p[i]['count']['value'];
     }
     if (count_compared) {
-      var image = '';
+      let image = '';
       $.get('/images/cmprloc/tax' + taxid + '.findcore.cmprloc.png', function (data) {
         image = '<iframe width="100%" height=300 frameborder=0 ' +
           'src="http://mbgd.genome.ad.jp/stanza/showcmprloc.php?tabid=tax' + taxid + '">Cannnot see iframe on this browser</iframe><br>';
       });
-      var html = '<font size="2">';
+      let html = '<font size="2">';
       if (image) {
         html += '&ensp;<b>Comparison of genomes</b>';
         html += '&ensp;(<a target="_blank" href="' + mbgd_page + 'tax' + taxid + '">selected ' + count_compared + ' representative genomes</a>)';
@@ -555,14 +555,14 @@ function show_genome_comparison(taxid) {
 
 function show_specific_genes(taxid) {
   queryBySpang(`${sparql_dir}/taxon_to_default_orgs.rq`, { taxid }, function (data) {
-    var data_p = data['results']['bindings'];
-    var count_default = 0;
-    for (var i = 0; i < data_p.length; i++) {
+    let data_p = data['results']['bindings'];
+    let count_default = 0;
+    for (let i = 0; i < data_p.length; i++) {
       count_default = data_p[i]['count']['value'];
     }
     if (count_default > 0) {
-      var html = '';
-      var mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
+      let html = '';
+      let mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
       html += '<font size="2">';
       html += '&ensp;<b>Taxon specific genes</b>';
       html += '&ensp;(<a target="_blank" href="' + mbgd_page + 'default' + '">comparing ' + count_default;
@@ -581,7 +581,7 @@ function show_specific_genes(taxid) {
 }
 
 function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_genes, n_isoforms, cpd_label, busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly) {
-  var assembly_url = '';
+  let assembly_url = '';
   if (assembly) {
     assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + assembly;
   }
@@ -625,16 +625,16 @@ function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_g
 }
 
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
-  var count = 0;
+  let count = 0;
   
   queryBySpang(`${sparql_dir}/taxon_to_search_genomes.rq`, { target_taxid: taxid }, function (data) {
-    var data_p = data['results']['bindings'];
+    let data_p = data['results']['bindings'];
     count = data_p.length;
 
     let list_html = '';
     let count_selected_rows = 0;
     let count_reference = 0;
-    for (var i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
       data_p[i]['taxid']['value'].match(/(\d+)$/);
       const genome_taxid = RegExp.$1;
       const up_id_url = data_p[i]['proteome']['value'];
@@ -686,7 +686,7 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
     if (count_reference >= 2) {
       reference_count_unit = 'reference proteomes';
     }
-    var count_html = `<br><font size="2"><b><i>${taxon_name}</i>: ${count} ${count_unit}</b>`;
+    let count_html = `<br><font size="2"><b><i>${taxon_name}</i>: ${count} ${count_unit}</b>`;
     count_html += ` (including <b>${count_reference}</b> ${reference_count_unit})`;
     count_html += '<br><br></font>';
 
@@ -702,7 +702,7 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
       }
     });
 
-    var detailTable = $('#details');
+    let detailTable = $('#details');
     $.tablesorter.clearTableBody( detailTable[0] );
     detailTable.append(list_html).trigger('update');
   });
@@ -711,15 +711,15 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
 }
 
 function show_selected_genome() {
-  var total = 0;
-  for (var i = 0; i < localStorage.length; i++) {
-    var key = localStorage.key(i);
+  let total = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    let key = localStorage.key(i);
     if (key.startsWith('UP0')) {
       total++;
     }
   }
 
-  var html = '<tr>' +
+  let html = '<tr>' +
       '<td id="selected_genome_num"><font size="2">You selected <b>' + total + '</b> proteomes</font></td>' +
       '<td><a href="selected_genomes.html" target="_blank" class="btn">Check List</a></td>' +
       '<td width="5px"></td>' +
@@ -750,7 +750,7 @@ function setDefaultSpeciesList() {
       queryBySpang(`${sparql_dir}/search_genomes_for_values.rq`, { values: values }, function (data) {
         const data_p = data['results']['bindings'];
         count = data_p.length;
-        for (var i = 0; i < count; i++) {
+        for (let i = 0; i < count; i++) {
           data_p[i]['taxid']['value'].match(/(\d+)$/);
           const genome_taxid = RegExp.$1;
           const up_id_url = data_p[i]['proteome']['value'];
@@ -775,7 +775,7 @@ function setDefaultSpeciesList() {
 }
 
 function saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid, n_genes, n_isoforms, cpd_label, busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly) {
-  var assembly_url = '';
+  let assembly_url = '';
   if (assembly) {
     assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + assembly;
   }
