@@ -10,17 +10,18 @@ const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/s
 
 function queryBySpang(queryUrl, param, callback, target_end = null) {
   spang.getTemplate(queryUrl, (query) => {
-    spang.query(query, target_end ? target_end : endpoint, { param: param, format: 'json' }, (errror, status, result) => {
+    spang.query(query, target_end ? target_end : endpoint, {param: param, format: 'json'}, (errror, status, result) => {
       let resultJson;
       try {
         resultJson = JSON.parse(result);
       } catch (e) {
         console.log(e);
-        resultJson = { results:
-                       {
-                         bindings: {}
-                       }
-                     };
+        resultJson = {
+          results:
+            {
+              bindings: {}
+            }
+        };
       }
       callback(resultJson);
     });
@@ -39,13 +40,13 @@ function init() {
   }
 
   haystack = [];
-  $.ajaxSetup({ async: false });
+  $.ajaxSetup({async: false});
 
   queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, function (data) {
     scientificNameMap = {};
     for (let binding of data.results.bindings) {
       let entry = binding.name.value;
-      if(binding.commonName?.value) {
+      if (binding.commonName?.value) {
         entry += ` (${binding.commonName.value})`;
         scientificNameMap[entry] = binding.name.value;
         displayNameMap[binding.name.value] = entry;
@@ -208,25 +209,25 @@ function clear_tables() {
 function show_contents(taxon_name, display_name = null, push_state = true) {
   display_name = display_name || taxon_name;
   taxon_name = scientificNameMap[taxon_name] || taxon_name;
-  if(currentTaxonName === taxon_name)
+  if (currentTaxonName === taxon_name)
     return;
   currentTaxonName = taxon_name;
-  
+
   let genome_type = 'CompleteGenome';
   if ($('#draft').prop('checked')) {
     genome_type = 'Genome';
   }
-  
+
   let lang = document.querySelector('#language-selector').value;
 
   // Get tax ID
   let taxid;
   let rank;
 
-  if(push_state)
-    history.pushState({ taxon_name, display_name }, taxon_name, `?taxon_name=${taxon_name}&display_name=${display_name}`)
+  if (push_state)
+    history.pushState({taxon_name, display_name}, taxon_name, `?taxon_name=${taxon_name}&display_name=${display_name}`)
 
-  queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, { taxon_name }, function (data) {
+  queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, {taxon_name}, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
     taxid = RegExp.$1;
     rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
@@ -249,13 +250,13 @@ function show_contents(taxon_name, display_name = null, push_state = true) {
 
 function dbpedia_name(taxon_name) {
   if (taxon_name == 'Chania'
-      || taxon_name == 'Nitrososphaeria'
-      || taxon_name == 'Candidatus Korarchaeum cryptofilum') {
+    || taxon_name == 'Nitrososphaeria'
+    || taxon_name == 'Candidatus Korarchaeum cryptofilum') {
     return;
   } else if (taxon_name == 'Proteus') {
-    return { name: 'Proteus_(bacterium)', uri: '<http://dbpedia.org/resource/Proteus_(bacterium)>' };
+    return {name: 'Proteus_(bacterium)', uri: '<http://dbpedia.org/resource/Proteus_(bacterium)>'};
   } else if (taxon_name == 'Pan') {
-    return { name: 'Pan_(genus)', uri: '<http://dbpedia.org/resource/Pan_(genus)>' };
+    return {name: 'Pan_(genus)', uri: '<http://dbpedia.org/resource/Pan_(genus)>'};
   }
 
   let dbpedia_name = taxon_name
@@ -266,7 +267,7 @@ function dbpedia_name(taxon_name) {
     .replace(/\(/g, '_').replace(/\)/g, '_')
     .replace(/\[/g, '').replace(/\]/g, '');
 
-  return { name: dbpedia_name, uri: 'dbpedia:' + dbpedia_name };
+  return {name: dbpedia_name, uri: 'dbpedia:' + dbpedia_name};
 }
 
 function show_hierarchy(taxid, genome_type, lang) {
@@ -276,7 +277,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   let table_sister = [];
 
   let upper_promise = new Promise((resolve, reject) => {
-    queryBySpang(`${sparql_dir}/taxid_to_get_upper.rq`, { taxid }, function (data) {
+    queryBySpang(`${sparql_dir}/taxid_to_get_upper.rq`, {taxid}, function (data) {
       let data_p = data['results']['bindings'];
       for (let i = 0; i < data_p.length; i++) {
         table_upper[i] = data_p[i];
@@ -291,7 +292,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   let lower_promise = new Promise((resolve, reject) => {
-    queryBySpang(`${sparql_dir}/taxid_to_get_lower.rq`, { taxid }, function (data) {
+    queryBySpang(`${sparql_dir}/taxid_to_get_lower.rq`, {taxid}, function (data) {
       let data_p = data['results']['bindings'];
       for (let i = 0; i < data_p.length; i++) {
         table_lower[i] = data_p[i];
@@ -306,7 +307,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   let sister_promise = new Promise((resolve, reject) => {
-    queryBySpang(`${sparql_dir}/taxid_to_get_sisters.rq`, { taxid }, function (data) {
+    queryBySpang(`${sparql_dir}/taxid_to_get_sisters.rq`, {taxid}, function (data) {
       let data_p = data['results']['bindings'];
       for (let i = 0; i < data_p.length; i++) {
         table_sister[i] = data_p[i];
@@ -325,13 +326,13 @@ function show_hierarchy(taxid, genome_type, lang) {
   let dbpedia_labe_local = {};
   let local_promise = new Promise((resolve, reject) => {
     Promise.all([upper_promise, lower_promise, sister_promise]).then(() => {
-      queryBySpang(`${sparql_dir}/taxid_to_get_local.rq`, { taxid: list, local_lang: lang }, function (data) {
+      queryBySpang(`${sparql_dir}/taxid_to_get_local.rq`, {taxid: list, local_lang: lang}, function (data) {
         let data_p = data['results']['bindings'];
         for (let i = 0; i < data_p.length; i++) {
           let dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
           if (data_p[i]['label_en']) {
-          dbpedia_labe_en[dbpedia_uri] = data_p[i]['label_en']['value'];
-        }
+            dbpedia_labe_en[dbpedia_uri] = data_p[i]['label_en']['value'];
+          }
           if (data_p[i]['label_local'] && lang != 'en') {
             dbpedia_labe_local[dbpedia_uri] = data_p[i]['label_local']['value'];
           }
@@ -340,7 +341,7 @@ function show_hierarchy(taxid, genome_type, lang) {
       }, dbpedia_endpoint)
     });
   });
-  
+
   let main_count = 0;
   local_promise.then(() => {
     // Show tables
@@ -461,7 +462,10 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
     return;
   }
 
-  queryBySpang(`${sparql_dir}/dbpedia_entry.rq`, { entry: dbpedia.uri, lang_list: local_lang == 'en' ? '' : `("${local_lang}")` }, function (data) {  
+  queryBySpang(`${sparql_dir}/dbpedia_entry.rq`, {
+    entry: dbpedia.uri,
+    lang_list: local_lang == 'en' ? '' : `("${local_lang}")`
+  }, function (data) {
     let data_p = data['results']['bindings'];
     let img = '';
     let abst = '';
@@ -525,7 +529,7 @@ function show_genome_comparison(taxid) {
   let mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
 
   let count_compared = 0;
-  queryBySpang(`${sparql_dir}/taxid_to_get_dataset.rq`, { taxid }, function (data) {
+  queryBySpang(`${sparql_dir}/taxid_to_get_dataset.rq`, {taxid}, function (data) {
     let data_p = data['results']['bindings'];
     for (let i = 0; i < data_p.length; i++) {
       count_compared = data_p[i]['count']['value'];
@@ -554,7 +558,7 @@ function show_genome_comparison(taxid) {
 }
 
 function show_specific_genes(taxid) {
-  queryBySpang(`${sparql_dir}/taxon_to_default_orgs.rq`, { taxid }, function (data) {
+  queryBySpang(`${sparql_dir}/taxon_to_default_orgs.rq`, {taxid}, function (data) {
     let data_p = data['results']['bindings'];
     let count_default = 0;
     for (let i = 0; i < data_p.length; i++) {
@@ -626,8 +630,8 @@ function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_g
 
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
   let count = 0;
-  
-  queryBySpang(`${sparql_dir}/taxon_to_search_genomes.rq`, { target_taxid: taxid }, function (data) {
+
+  queryBySpang(`${sparql_dir}/taxon_to_search_genomes.rq`, {target_taxid: taxid}, function (data) {
     let data_p = data['results']['bindings'];
     count = data_p.length;
 
@@ -651,7 +655,7 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
       const busco_missing = data_p[i]['busco_missing'] ? data_p[i]['busco_missing']['value'] : '';
       const assembly = data_p[i]['assembly'] ? data_p[i]['assembly']['value'] : '';
       list_html += get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_genes, n_isoforms, cpd_label,
-                                 busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly);
+        busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly);
       if (localStorage.getItem(up_id)) {
         count_selected_rows++;
       }
@@ -661,22 +665,22 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
     }
 
     let list_header = '<thead><tr>' +
-        '<th align="center"><input type="checkbox" class="add_genome_all" title="Select all"></th>' +
-        '<th>Ref</th>' +
-        // '<th>Rep</th>' +
-        '<th style="min-width: 6em">Proteome ID</th>' +
-        '<th>Genome ID</th>' +
-        '<th style="min-width: 3em">Tax ID</th>' +
-        '<th>Species Name</th>' +
-        '<th>Genes</th>' +
-        '<th>Isoforms</th>' +
-        '<th>CPD <a href="https://uniprot.org/help/assessing_proteomes" target="_blank">*</a></th>' +
-        '<th>BUSCO</th>' +
-        '<th class="thin">single</th>' +
-        '<th class="thin">dupli.</th>' +
-        '<th class="thin">frag.</th>' +
-        '<th class="thin">miss.</th>' +
-        '</tr></thead>';
+      '<th align="center"><input type="checkbox" class="add_genome_all" title="Select all"></th>' +
+      '<th>Ref</th>' +
+      // '<th>Rep</th>' +
+      '<th style="min-width: 6em">Proteome ID</th>' +
+      '<th>Genome ID</th>' +
+      '<th style="min-width: 3em">Tax ID</th>' +
+      '<th>Species Name</th>' +
+      '<th>Genes</th>' +
+      '<th>Isoforms</th>' +
+      '<th>CPD <a href="https://uniprot.org/help/assessing_proteomes" target="_blank">*</a></th>' +
+      '<th>BUSCO</th>' +
+      '<th class="thin">single</th>' +
+      '<th class="thin">dupli.</th>' +
+      '<th class="thin">frag.</th>' +
+      '<th class="thin">miss.</th>' +
+      '</tr></thead>';
 
     let count_unit = 'proteome';
     if (count >= 2) {
@@ -696,14 +700,14 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
 
     $('#details').tablesorter({
       headers: {
-        0: { sorter: false },
-        6: { sorter: 'fancyNumber' },
-        7: { sorter: 'fancyNumber' }
+        0: {sorter: false},
+        6: {sorter: 'fancyNumber'},
+        7: {sorter: 'fancyNumber'}
       }
     });
 
     let detailTable = $('#details');
-    $.tablesorter.clearTableBody( detailTable[0] );
+    $.tablesorter.clearTableBody(detailTable[0]);
     detailTable.append(list_html).trigger('update');
   });
 
@@ -720,14 +724,14 @@ function show_selected_genome() {
   }
 
   let html = '<tr>' +
-      '<td id="selected_genome_num"><font size="2">You selected <b>' + total + '</b> proteomes</font></td>' +
-      '<td><a href="selected_genomes.html" target="_blank" class="btn">Check List</a></td>' +
-      '<td width="5px"></td>' +
-      '<td><input type="button" class="btn" style="font-size:13px;background:#c93a40" value="Clear" onClick="clearLocalStorage()"/>' +
-      '<td width="5px"></td>' +
-      '<td><input type="button" class="btn" style="font-size:13px;background:#707070" value="Default" onClick="setDefaultSpeciesList()"/>' +
-      '<td width="5px"></td>' +
-      '</tr>';
+    '<td id="selected_genome_num"><font size="2">You selected <b>' + total + '</b> proteomes</font></td>' +
+    '<td><a href="selected_genomes.html" target="_blank" class="btn">Check List</a></td>' +
+    '<td width="5px"></td>' +
+    '<td><input type="button" class="btn" style="font-size:13px;background:#c93a40" value="Clear" onClick="clearLocalStorage()"/>' +
+    '<td width="5px"></td>' +
+    '<td><input type="button" class="btn" style="font-size:13px;background:#707070" value="Default" onClick="setDefaultSpeciesList()"/>' +
+    '<td width="5px"></td>' +
+    '</tr>';
   $('#selected_genome').html(html);
   $('#selected_genome').css('background-color', '#d6d6d6');
 }
@@ -745,9 +749,9 @@ function setDefaultSpeciesList() {
     .then(response => response.text())
     .then(text => {
       let values = text.split('\n').map(line => line.split('\t')[5])
-          .filter(elem => elem.startsWith('UP0')).map(elem => `(proteome:${elem})`)
-          .join(' ');
-      queryBySpang(`${sparql_dir}/search_genomes_for_values.rq`, { values: values }, function (data) {
+        .filter(elem => elem.startsWith('UP0')).map(elem => `(proteome:${elem})`)
+        .join(' ');
+      queryBySpang(`${sparql_dir}/search_genomes_for_values.rq`, {values: values}, function (data) {
         const data_p = data['results']['bindings'];
         count = data_p.length;
         for (let i = 0; i < count; i++) {
@@ -767,7 +771,7 @@ function setDefaultSpeciesList() {
           const busco_missing = data_p[i]['busco_missing'] ? data_p[i]['busco_missing']['value'] : '';
           const assembly = data_p[i]['assembly'] ? data_p[i]['assembly']['value'] : '';
           saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid, n_genes, n_isoforms, cpd_label,
-                             busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly);
+            busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly);
         }
         show_selected_genome();
       });
@@ -815,7 +819,7 @@ function saveInlocalStorage(up_id_url, up_id, types, organism_name, genome_taxid
 function load_url_state(push_state = true) {
   const urlParams = new URLSearchParams(window.location.search);
   let taxon_name = urlParams.get('taxon_name')
-  if(taxon_name) {
+  if (taxon_name) {
     let display_name = urlParams.get('display_name')
     $('#tags').val(display_name || taxon_name);
     show_contents(taxon_name, display_name, push_state);
@@ -841,9 +845,9 @@ $(() => {
   let defaultLang = localStorage.getItem('language');
   defaultLang = defaultLang || ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || navigator.browserLanguage).substr(0, 2);
   let defaultOption = document.querySelector(`.language-option[value="${defaultLang}"]`);
-  if(defaultOption)
+  if (defaultOption)
     defaultOption.selected = 'selected';
-  
+
   $('#language-selector').on('change', (e) => {
     localStorage.setItem('language', e.target.value);
     currentTaxonName = null; // Forciblly reload current taxon
@@ -852,7 +856,7 @@ $(() => {
 
   show_selected_genome();
 
-  window.onpopstate = function(event) {
+  window.onpopstate = function (event) {
     load_url_state(false);
   }
 
