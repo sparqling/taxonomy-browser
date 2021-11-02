@@ -676,12 +676,9 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
       reference_count_unit = 'reference proteomes';
     }
     let count_html = `<br><font size="2"><b><i>${taxon_name}</i>: ${count} ${count_unit}</b>`;
-    count_html += ` (including <b>${count_reference}</b> ${reference_count_unit})`;
-    count_html += '<br><br></font>';
+    count_html += ` (including <b>${count_reference}</b> ${reference_count_unit})</font>`;
 
-    $('#counter_div').html(count_html);
-
-    $('#details_div').html('<div style="float: right; margin-bottom: 10px">Filter by: <input id="detail-filter" data-column="all" type="search" style="margin-right: 30px;"></div>' + 
+    $('#details_div').html(count_html + '<label style="margin-left: 20px; margin-bottom: 10px">Filter by: </label><input id="detail-filter" data-column="all" type="search" style="margin-right: 30px;">' + 
       '<table border="1" id="details" class="tablesorter">' + list_header + list_html + '</table>');
 
     $('#details').tablesorter({
