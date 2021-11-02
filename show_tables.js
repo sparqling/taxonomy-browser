@@ -681,14 +681,20 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
 
     $('#counter_div').html(count_html);
 
-    $('#details_div').html('<table border="1" id="details" class="tablesorter">' + list_header + list_html + '</table>');
+    $('#details_div').html('<div style="float: right; margin-bottom: 10px">Filter by: <input id="detail-filter" data-column="all" type="search" style="margin-right: 30px;"></div>' + 
+      '<table border="1" id="details" class="tablesorter">' + list_header + list_html + '</table>');
 
     $('#details').tablesorter({
       headers: {
         0: {sorter: false},
         6: {sorter: 'fancyNumber'},
         7: {sorter: 'fancyNumber'}
-      }
+      },
+      widgetOptions : {
+        filter_columnFilters: false,
+        filter_external: '#detail-filter',
+      },
+      widgets: ["filter"],
     });
 
     let detailTable = $('#details');
