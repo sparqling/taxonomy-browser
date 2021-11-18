@@ -2,10 +2,16 @@ let haystack = [];
 let currentTaxonName = null;
 let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
+let currentGenomeMap = {};
 
 const dbpedia_endpoint = 'https://dbpedia.org/sparql';
 const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
 const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/sparql/'
+const prefix = 'taxonomy-browser-proteome-';
+
+Storage.prototype.setObject = function(key, value) {
+  this.setItem(key, JSON.stringify(value));
+}
 
 
 function queryBySpang(queryUrl, param, callback, target_end = null) {
@@ -136,14 +142,13 @@ $(function () {
     // Selected item
     let proteome_id = this_row.find('td.proteome-id-td').text();
     // let orgname = this_row.find('td:nth-child(7)').text();
-    let orgname = this_row.html();
 
-    if (localStorage.getItem(proteome_id)) {
+    if (localStorage.getItem(prefix + proteome_id)) {
       // Delete the item
-      localStorage.removeItem(proteome_id);
+      localStorage.removeItem(prefix + proteome_id);
     } else {
       // Add the item
-      localStorage.setItem(proteome_id, orgname);
+      localStorage.setObject(prefix + proteome_id, currentGenomeMap[proteome_id]);
     }
 
     // Draw table
@@ -157,19 +162,17 @@ $(function () {
       let each_row = $(each_checkbox).closest('tr');
       // Eech item
       let proteome_id = each_row.find('td.proteome-id-td').text();
-      // let orgname = each_row.find('td:nth-child(7)').text();
-      let orgname = each_row.html();
-
+      
       if (selected) {
         // Add the item
-        if (!localStorage.getItem(proteome_id)) {
-          localStorage.setItem(proteome_id, orgname);
+        if (!localStorage.getItem(prefix + proteome_id)) {
+          localStorage.setItem(prefix + proteome_id, currentGenomeMap[proteome_id]);
         }
         $(each_checkbox).prop("checked", true);
       } else {
         // Delete the item
-        if (localStorage.getItem(proteome_id)) {
-          localStorage.removeItem(proteome_id);
+        if (localStorage.getItem(prefix + proteome_id)) {
+          localStorage.removeItem(prefix + proteome_id);
         }
         $(each_checkbox).prop("checked", false);
       }
@@ -569,49 +572,7 @@ function show_specific_genes(taxid) {
   });
 }
 
-function get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_genes, n_isoforms, cpd_label, busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly) {
-  let assembly_url = '';
-  if (assembly) {
-    assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + assembly;
-  }
-  let checkedAttr = localStorage.getItem(up_id) ? "checked" : "";
 
-  let scientific_name = organism_name;
-  let common_name = '';
-  if (organism_name.match(/(.*)?(\(.*)/)) {
-    scientific_name = RegExp.$1;
-    common_name = RegExp.$2;
-  }
-  let name = `<i>${scientific_name}</i> ${common_name}`;
-
-  let list_html = '<tr>';
-  list_html += `<td align="center"><input type="checkbox" class="add_genome" ${checkedAttr} title="Select"></td>`;
-  if (types.match(/Reference_Proteome/)) {
-    list_html += '<td align="center"> &#9675 </td>';
-  } else {
-    list_html += '<td> </td>';
-  }
-  // if (types.match(/Representative_Proteome/)) {
-  //   list_html += '<td align="center"> &#9675 </td>';
-  // } else {
-  //   list_html += '<td> </td>';
-  // }
-  list_html += `<td class="proteome-id-td"><a href="${up_id_url}" target="_blank">${up_id}</a></td>`;
-  list_html += `<td><a href="${assembly_url}" target="_blank">${assembly}</a></td>`;
-  list_html += '<td>' + genome_taxid + '</td>';
-  list_html += '<td class="genome_name">' + name + '</td>';
-  list_html += '<td align="right">' + n_genes.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</td>';
-  list_html += '<td align="right">' + n_isoforms.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</td>';
-  list_html += '<td align="right">' + cpd_label + '</td>';
-  list_html += '<td align="right">' + busco_complete + '</td>';
-  list_html += '<td align="right">' + busco_single + '</td>';
-  list_html += '<td align="right">' + busco_multi + '</td>';
-  list_html += '<td align="right">' + busco_fragmented + '</td>';
-  list_html += '<td align="right">' + busco_missing + '</td>';
-  list_html += '</tr>';
-
-  return list_html;
-}
 
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
   let count = 0;
@@ -621,29 +582,43 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
     count = data_p.length;
 
     let list_html = '';
-    let count_selected_rows = 0;
     let count_reference = 0;
+    currentGenomeMap = {};
     for (let i = 0; i < count; i++) {
-      data_p[i]['taxid']['value'].match(/(\d+)$/);
+      let row = data_p[i];
+      
+      row['taxid']['value'].match(/(\d+)$/);
       const genome_taxid = RegExp.$1;
-      const up_id_url = data_p[i]['proteome']['value'];
-      const up_id = data_p[i]['proteome']['value'].replace(/.*\//, '');
-      const types = data_p[i]['types']['value'];
-      const organism_name = data_p[i]['organism']['value'];
-      const n_genes = parseInt(data_p[i]['proteins']['value']);
-      const n_isoforms = parseInt(data_p[i]['isoforms']['value']);
-      const cpd_label = data_p[i]['cpd_label']['value'];
-      const busco_complete = data_p[i]['busco_complete'] ? data_p[i]['busco_complete']['value'] : '';
-      const busco_single = data_p[i]['busco_single'] ? data_p[i]['busco_single']['value'] : '';
-      const busco_multi = data_p[i]['busco_multi'] ? data_p[i]['busco_multi']['value'] : '';
-      const busco_fragmented = data_p[i]['busco_fragmented'] ? data_p[i]['busco_fragmented']['value'] : '';
-      const busco_missing = data_p[i]['busco_missing'] ? data_p[i]['busco_missing']['value'] : '';
-      const assembly = data_p[i]['assembly'] ? data_p[i]['assembly']['value'] : '';
-      list_html += get_table_row(up_id_url, up_id, types, organism_name, genome_taxid, n_genes, n_isoforms, cpd_label,
-        busco_complete, busco_single, busco_multi, busco_fragmented, busco_missing, assembly);
-      if (localStorage.getItem(up_id)) {
-        count_selected_rows++;
-      }
+      const up_id_url = row['proteome']['value'];
+      const up_id = row['proteome']['value'].replace(/.*\//, '');
+      const types = row['types']['value'];
+      const organism_name = row['organism']['value'];
+      const n_genes = parseInt(row['proteins']['value']);
+      const n_isoforms = parseInt(row['isoforms']['value']);
+      const cpd_label = row['cpd_label']['value'];
+      const busco_complete = row['busco_complete'] ? row['busco_complete']['value'] : '';
+      const busco_single = row['busco_single'] ? row['busco_single']['value'] : '';
+      const busco_multi = row['busco_multi'] ? row['busco_multi']['value'] : '';
+      const busco_fragmented = row['busco_fragmented'] ? row['busco_fragmented']['value'] : '';
+      const busco_missing = row['busco_missing'] ? row['busco_missing']['value'] : '';
+      const assembly = row['assembly'] ? row['assembly']['value'] : '';
+      currentGenomeMap[up_id] = {
+        genome_taxid,
+        up_id_url,
+        up_id,
+        types,
+        organism_name,
+        n_genes,
+        n_isoforms,
+        cpd_label,
+        busco_complete,
+        busco_single,
+        busco_multi,
+        busco_fragmented,
+        busco_missing,
+        assembly
+      };
+      list_html += get_table_row(currentGenomeMap[up_id]);
       if (types.match(/Reference_Proteome/)) {
         count_reference++;
       }
@@ -706,7 +681,7 @@ function show_selected_genome() {
   let total = 0;
   for (let i = 0; i < localStorage.length; i++) {
     let key = localStorage.key(i);
-    if (key.startsWith('UP0')) {
+    if (key.startsWith(prefix)) {
       total++;
     }
   }
@@ -737,7 +712,7 @@ function setDefaultSpeciesList() {
     .then(response => response.text())
     .then(text => {
       let values = text.split('\n').map(line => line.split('\t')[5])
-        .filter(elem => elem.startsWith('UP0')).map(elem => `(proteome:${elem})`)
+        .filter(elem => elem.startsWith('prefix')).map(elem => `(proteome:${elem.slice(prefix.length)})`)
         .join(' ');
       queryBySpang(`${sparql_dir}/search_genomes_for_values.rq`, {values: values}, function (data) {
         const data_p = data['results']['bindings'];
