@@ -161,7 +161,7 @@ $(function () {
       if (selected) {
         // Add the item
         if (!localStorage.getItem(prefix + proteome_id)) {
-          localStorage.setItem(prefix + proteome_id, currentGenomeMap[proteome_id]);
+          localStorage.setObject(prefix + proteome_id, currentGenomeMap[proteome_id]);
         }
         $(each_checkbox).prop("checked", true);
       } else {

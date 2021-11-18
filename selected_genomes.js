@@ -4,6 +4,11 @@ function init() {
   show_selected_genomes();
 }
 
+
+Storage.prototype.setObject = function(key, value) {
+	this.setItem(key, JSON.stringify(value));
+}
+
 $(function() {
   $(document).on('click', '.add_genome', function() {
 	  let this_row = $(this).closest('tr');
@@ -15,9 +20,8 @@ $(function() {
 	    localStorage.removeItem(prefix + codename);
 	  } else {         
 	    // Add the item
-	    localStorage.setItem(prefix + codename, initialGenomeMap[codename]);
+	    localStorage.setObject(prefix + codename, initialGenomeMap[codename]);
 	  }
-
 	  show_selected_genomes();
   });
 
@@ -33,7 +37,7 @@ $(function() {
       if (selected) {
 		    // Add the item
         if (!localStorage.getItem(prefix + codename)) {
- 		      localStorage.setItem(prefix + codename, initialGenomeMap[codename]);
+ 		      localStorage.setObject(prefix + codename, initialGenomeMap[codename]);
 		    }
       } else {
 		    // Delete the item
