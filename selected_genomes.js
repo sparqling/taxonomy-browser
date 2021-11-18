@@ -1,5 +1,3 @@
-const prefix = 'taxonomy-browser-proteome-';
-
 let initialGenomeMap = {};
 
 function init() {

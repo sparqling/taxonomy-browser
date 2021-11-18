@@ -4,15 +4,10 @@ let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
 let currentGenomeMap = {};
 
-const dbpedia_endpoint = 'https://dbpedia.org/sparql';
-const endpoint = 'https://orth.dbcls.jp/sparql-proxy';
-const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/sparql/'
-const prefix = 'taxonomy-browser-proteome-';
 
 Storage.prototype.setObject = function(key, value) {
   this.setItem(key, JSON.stringify(value));
 }
-
 
 function queryBySpang(queryUrl, param, callback, target_end = null) {
   spang.getTemplate(queryUrl, (query) => {
@@ -571,8 +566,6 @@ function show_specific_genes(taxid) {
     }
   });
 }
-
-
 
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
   let count = 0;
