@@ -3,7 +3,8 @@ function get_table_row(genome_record) {
   if (genome_record.assembly) {
     assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + genome_record.assembly;
   }
-  let checkedAttr = localStorage.getItem(prefix + genome_record.up_id) ? "checked" : "";
+  
+  let checkedAttr = selectedTaxa[genome_record.up_id] ? "checked" : "";
 
   let scientific_name = genome_record.organism_name;
   let common_name = '';

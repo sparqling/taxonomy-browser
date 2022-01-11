@@ -11,18 +11,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
     <script src="const.js"></script>
     <script src="get_table_row.js"></script>
-    <script src="selected_genomes.js"></script>
+    <script src="show_tables.js"></script>
   </head>
 
   <body onload=init()>
-
     <div class="ui-widget">
-
-      <!-- List of genomes -->
-      <div id="counter_div"></div>
-      <table border="0" id="details" class="tablesorter"></table>
-
+      <div id="details_div">
+      </div>
     </div>
-
   </body>
+  <script>
+    function init() {
+      let taxa = Object.values(selectedTaxa).filter(taxon => taxon !== null);
+      let counter_html = `<font size="2"><br>You selected <b>${taxa.length}</b> proteomes <br><br></font>`;
+      show_genomes_table(taxa, counter_html);
+    }
+  </script>
 </html>

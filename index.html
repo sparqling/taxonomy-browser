@@ -79,4 +79,27 @@
 
 </div>
 </body>
+<script>
+    $(() => {
+        let defaultLang = localStorage.getItem('language');
+        defaultLang = defaultLang || ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || navigator.browserLanguage).substr(0, 2);
+        let defaultOption = document.querySelector(`.language-option[value="${defaultLang}"]`);
+        if (defaultOption)
+            defaultOption.selected = 'selected';
+
+        $('#language-selector').on('change', (e) => {
+            localStorage.setItem('language', e.target.value);
+            currentTaxonName = null; // Forciblly reload current taxon
+            load_url_state(false);
+        });
+
+        show_selected_genome();
+
+        window.onpopstate = function (event) {
+            load_url_state(false);
+        }
+
+        load_url_state();
+    })
+</script>
 </html>

@@ -4,10 +4,15 @@ let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
 let currentGenomeMap = {};
 
-
 Storage.prototype.setObject = function(key, value) {
   this.setItem(key, JSON.stringify(value));
 }
+
+Storage.prototype.getObject = function(key) {
+  return JSON.parse(this.getItem(key));
+}
+
+let selectedTaxa = localStorage.getObject('selectedTaxa') || {};
 
 function queryBySpang(queryUrl, param, callback, target_end = null) {
   spang.getTemplate(queryUrl, (query) => {
@@ -135,17 +140,20 @@ $(function () {
   $(document).on('click', '.add_genome', function () {
     let this_row = $(this).closest('tr');
     // Selected item
+    let selected = $(this).prop("checked");
     let proteome_id = this_row.find('td.proteome-id-td').text();
     // let orgname = this_row.find('td:nth-child(7)').text();
-
-    if (localStorage.getItem(prefix + proteome_id)) {
-      // Delete the item
-      localStorage.removeItem(prefix + proteome_id);
-    } else {
+    
+    
+    if(selected) {
       // Add the item
-      localStorage.setObject(prefix + proteome_id, currentGenomeMap[proteome_id]);
+      selectedTaxa[proteome_id] = currentGenomeMap[proteome_id];
     }
-
+    else {
+      // Delete the item
+      delete selectedTaxa[proteome_id];
+    }
+    localStorage.setObject('selectedTaxa', selectedTaxa);
     // Draw table
     show_selected_genome();
   });
@@ -153,6 +161,8 @@ $(function () {
   $(document).on('click', '.add_genome_all', function () {
     // Swith the icon
     let selected = $(this).prop("checked");
+
+    let taxaUPIds = localStorage.getObject('taxaUPIds');
     $('.add_genome').each((i, each_checkbox) => {
       let each_row = $(each_checkbox).closest('tr');
       // Eech item
@@ -160,18 +170,15 @@ $(function () {
       
       if (selected) {
         // Add the item
-        if (!localStorage.getItem(prefix + proteome_id)) {
-          localStorage.setObject(prefix + proteome_id, currentGenomeMap[proteome_id]);
-        }
+        selectedTaxa[proteome_id] = currentGenomeMap[proteome_id];
         $(each_checkbox).prop("checked", true);
       } else {
         // Delete the item
-        if (localStorage.getItem(prefix + proteome_id)) {
-          localStorage.removeItem(prefix + proteome_id);
-        }
+        delete selectedTaxa[proteome_id];
         $(each_checkbox).prop("checked", false);
       }
     });
+    localStorage.setObject('selectedTaxa', selectedTaxa);
     // Draw table
     show_selected_genome();
   });
@@ -567,6 +574,56 @@ function show_specific_genes(taxid) {
   });
 }
 
+function show_genomes_table(genomes, count_html) {
+  let list_html = '';
+  let count_reference = 0;
+  for (let genome of genomes) {
+    list_html += get_table_row(genome);
+    if (genome.types.match(/Reference_Proteome/)) {
+      count_reference++;
+    }
+  }
+
+  let list_header = '<thead><tr>' +
+    '<th align="center"><input type="checkbox" class="add_genome_all" title="Select all"></th>' +
+    '<th>Ref</th>' +
+    // '<th>Rep</th>' +
+    '<th style="min-width: 6em">Proteome ID</th>' +
+    '<th>Genome ID</th>' +
+    '<th style="min-width: 3em">Tax ID</th>' +
+    '<th>Species Name</th>' +
+    '<th>Genes</th>' +
+    '<th>Isoforms</th>' +
+    '<th>CPD <a href="https://uniprot.org/help/assessing_proteomes" target="_blank">*</a></th>' +
+    '<th>BUSCO</th>' +
+    '<th class="thin">single</th>' +
+    '<th class="thin">dupli.</th>' +
+    '<th class="thin">frag.</th>' +
+    '<th class="thin">miss.</th>' +
+    '</tr></thead>';
+  
+
+  $('#details_div').html(count_html +
+    '<table border="1" id="details" class="tablesorter">' + list_header + list_html + '</table>');
+  
+  $('#details').tablesorter({
+    headers: {
+      0: {sorter: false},
+      6: {sorter: 'fancyNumber'},
+      7: {sorter: 'fancyNumber'}
+    },
+    widgetOptions : {
+      filter_columnFilters: false,
+      filter_external: '#detail-filter',
+    },
+    widgets: ["filter"],
+  });
+
+  let detailTable = $('#details');
+  $.tablesorter.clearTableBody(detailTable[0]);
+  detailTable.append(list_html).trigger('update');
+}
+
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
   let count = 0;
 
@@ -611,30 +668,11 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
         busco_missing,
         assembly
       };
-      list_html += get_table_row(currentGenomeMap[up_id]);
+
       if (types.match(/Reference_Proteome/)) {
         count_reference++;
       }
     }
-
-    let list_header = '<thead><tr>' +
-      '<th align="center"><input type="checkbox" class="add_genome_all" title="Select all"></th>' +
-      '<th>Ref</th>' +
-      // '<th>Rep</th>' +
-      '<th style="min-width: 6em">Proteome ID</th>' +
-      '<th>Genome ID</th>' +
-      '<th style="min-width: 3em">Tax ID</th>' +
-      '<th>Species Name</th>' +
-      '<th>Genes</th>' +
-      '<th>Isoforms</th>' +
-      '<th>CPD <a href="https://uniprot.org/help/assessing_proteomes" target="_blank">*</a></th>' +
-      '<th>BUSCO</th>' +
-      '<th class="thin">single</th>' +
-      '<th class="thin">dupli.</th>' +
-      '<th class="thin">frag.</th>' +
-      '<th class="thin">miss.</th>' +
-      '</tr></thead>';
-
     let count_unit = 'proteome';
     if (count >= 2) {
       count_unit = 'proteomes';
@@ -645,39 +683,15 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
     }
     let count_html = `<br><font size="2"><b><i>${taxon_name}</i>: ${count} ${count_unit}</b>`;
     count_html += ` (including <b>${count_reference}</b> ${reference_count_unit})</font>`;
-
-    $('#details_div').html(count_html + '<label style="margin-left: 20px; margin-bottom: 10px">Filter by: </label><input id="detail-filter" data-column="all" type="search" style="margin-right: 30px;">' + 
-      '<table border="1" id="details" class="tablesorter">' + list_header + list_html + '</table>');
-
-    $('#details').tablesorter({
-      headers: {
-        0: {sorter: false},
-        6: {sorter: 'fancyNumber'},
-        7: {sorter: 'fancyNumber'}
-      },
-      widgetOptions : {
-        filter_columnFilters: false,
-        filter_external: '#detail-filter',
-      },
-      widgets: ["filter"],
-    });
-
-    let detailTable = $('#details');
-    $.tablesorter.clearTableBody(detailTable[0]);
-    detailTable.append(list_html).trigger('update');
+    count_html += `<label style="margin-left: 20px; margin-bottom: 10px">Filter by: </label><input id="detail-filter" data-column="all" type="search" style="margin-right: 30px;">`;
+    show_genomes_table(Object.values(currentGenomeMap), count_html);
   });
 
   return count;
 }
 
 function show_selected_genome() {
-  let total = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    let key = localStorage.key(i);
-    if (key.startsWith(prefix)) {
-      total++;
-    }
-  }
+  let total = Object.values(selectedTaxa).length;
 
   let html = '<tr>' +
     '<td id="selected_genome_num"><font size="2">You selected <b>' + total + '</b> proteomes</font></td>' +
@@ -797,24 +811,4 @@ $(() => {
     },
     type: 'numeric'
   });
-
-  let defaultLang = localStorage.getItem('language');
-  defaultLang = defaultLang || ((navigator.languages && navigator.languages[0]) || navigator.language || navigator.userLanguage || navigator.browserLanguage).substr(0, 2);
-  let defaultOption = document.querySelector(`.language-option[value="${defaultLang}"]`);
-  if (defaultOption)
-    defaultOption.selected = 'selected';
-
-  $('#language-selector').on('change', (e) => {
-    localStorage.setItem('language', e.target.value);
-    currentTaxonName = null; // Forciblly reload current taxon
-    load_url_state(false);
-  });
-
-  show_selected_genome();
-
-  window.onpopstate = function (event) {
-    load_url_state(false);
-  }
-
-  load_url_state();
 });
