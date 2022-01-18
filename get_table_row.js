@@ -4,7 +4,7 @@ function get_table_row(genome_record) {
     assembly_url = 'https://ncbi.nlm.nih.gov/assembly/' + genome_record.assembly;
   }
   
-  let checkedAttr = selectedTaxa[genome_record.up_id] ? "checked" : "";
+  let checkedAttr = selectedTaxa[genome_record.up_id] !== undefined ? "checked" : "";
 
   let scientific_name = genome_record.organism_name;
   let common_name = '';
