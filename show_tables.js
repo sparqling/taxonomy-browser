@@ -3,7 +3,7 @@ let currentTaxonName = null;
 let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
 let proteomeMap = {};
-const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/sparql/'
+const sparqlDir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/sparql/'
 
 Storage.prototype.setObject = function(key, value) {
   this.setItem(key, JSON.stringify(value));
@@ -43,7 +43,7 @@ function init() {
   candidates = [];
   $.ajaxSetup({async: false});
 
-  queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, (data) => {
+  queryBySpang(`${sparqlDir}/get_taxa_as_candidates.rq`, {}, (data) => {
     scientificNameMap = {};
     for (let binding of data.results.bindings) {
       let entry = binding.name.value;
@@ -215,7 +215,7 @@ function show_contents(taxon_name, display_name = null, push_state = true) {
   if (push_state)
     history.pushState({taxon_name, display_name}, taxon_name, `?taxon_name=${taxon_name}&display_name=${display_name}`)
 
-  queryBySpang(`${sparql_dir}/scientific_name_to_taxid.rq`, {taxon_name}, function (data) {
+  queryBySpang(`${sparqlDir}/scientific_name_to_taxid.rq`, {taxon_name}, function (data) {
     data['results']['bindings'][0]['taxon']['value'].match(/(\d+)$/);
     taxid = RegExp.$1;
     rank = data['results']['bindings'][0]['rank']['value'].replace(/.*\//, '');
@@ -265,7 +265,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   let table_sister = [];
 
   let upper_promise = new Promise((resolve, reject) => {
-    queryBySpang(`${sparql_dir}/taxid_to_get_upper.rq`, {taxid}, function (data) {
+    queryBySpang(`${sparqlDir}/taxid_to_get_upper.rq`, {taxid}, function (data) {
       let data_p = data['results']['bindings'];
       for (let i = 0; i < data_p.length; i++) {
         table_upper[i] = data_p[i];
@@ -280,7 +280,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   let lower_promise = new Promise((resolve, reject) => {
-    queryBySpang(`${sparql_dir}/taxid_to_get_lower.rq`, {taxid}, function (data) {
+    queryBySpang(`${sparqlDir}/taxid_to_get_lower.rq`, {taxid}, function (data) {
       let data_p = data['results']['bindings'];
       for (let i = 0; i < data_p.length; i++) {
         table_lower[i] = data_p[i];
@@ -295,7 +295,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   });
 
   let sister_promise = new Promise((resolve, reject) => {
-    queryBySpang(`${sparql_dir}/taxid_to_get_sisters.rq`, {taxid}, function (data) {
+    queryBySpang(`${sparqlDir}/taxid_to_get_sisters.rq`, {taxid}, function (data) {
       let data_p = data['results']['bindings'];
       for (let i = 0; i < data_p.length; i++) {
         table_sister[i] = data_p[i];
@@ -314,7 +314,7 @@ function show_hierarchy(taxid, genome_type, lang) {
   let dbpedia_labe_local = {};
   let local_promise = new Promise((resolve, reject) => {
     Promise.all([upper_promise, lower_promise, sister_promise]).then(() => {
-      queryBySpang(`${sparql_dir}/taxid_to_get_local.rq`, {taxid: list, local_lang: lang}, function (data) {
+      queryBySpang(`${sparqlDir}/taxid_to_get_local.rq`, {taxid: list, local_lang: lang}, function (data) {
         let data_p = data['results']['bindings'];
         for (let i = 0; i < data_p.length; i++) {
           let dbpedia_uri = data_p[i]['dbpedia_resource']['value'];
@@ -450,7 +450,7 @@ function show_dbpedia(taxon_name, taxid, local_lang) {
     return;
   }
 
-  queryBySpang(`${sparql_dir}/dbpedia_entry.rq`, {
+  queryBySpang(`${sparqlDir}/dbpedia_entry.rq`, {
     entry: dbpedia.uri,
     lang_list: local_lang == 'en' ? '' : `("${local_lang}")`
   }, function (data) {
@@ -517,7 +517,7 @@ function show_genome_comparison(taxid) {
   let mbgd_page = '/htbin/cluster_map?show_summary=on&map_type=cluster_size&tabid=';
 
   let count_compared = 0;
-  queryBySpang(`${sparql_dir}/taxid_to_get_dataset.rq`, {taxid}, function (data) {
+  queryBySpang(`${sparqlDir}/taxid_to_get_dataset.rq`, {taxid}, function (data) {
     let data_p = data['results']['bindings'];
     for (let i = 0; i < data_p.length; i++) {
       count_compared = data_p[i]['count']['value'];
@@ -546,7 +546,7 @@ function show_genome_comparison(taxid) {
 }
 
 function show_specific_genes(taxid) {
-  queryBySpang(`${sparql_dir}/taxon_to_default_orgs.rq`, {taxid}, function (data) {
+  queryBySpang(`${sparqlDir}/taxon_to_default_orgs.rq`, {taxid}, function (data) {
     let data_p = data['results']['bindings'];
     let count_default = 0;
     for (let i = 0; i < data_p.length; i++) {
@@ -625,7 +625,7 @@ function show_genomes_table(genomes, count_html) {
 function show_genome_list(rank, taxon_name, taxid, genome_type) {
   let count = 0;
 
-  queryBySpang(`${sparql_dir}/taxon_to_search_genomes.rq`, {target_taxid: taxid}, function (data) {
+  queryBySpang(`${sparqlDir}/taxon_to_search_genomes.rq`, {target_taxid: taxid}, function (data) {
     let data_p = data['results']['bindings'];
     count = data_p.length;
 
@@ -719,7 +719,7 @@ function setDefaultSpeciesList() {
       let values = text.split('\n').map(line => line.split('\t')[5])
         .filter(elem => elem.startsWith('prefix')).map(elem => `(proteome:${elem.slice(prefix.length)})`)
         .join(' ');
-      queryBySpang(`${sparql_dir}/search_genomes_for_values.rq`, {values: values}, function (data) {
+      queryBySpang(`${sparqlDir}/search_genomes_for_values.rq`, {values: values}, function (data) {
         const data_p = data['results']['bindings'];
         count = data_p.length;
         for (let i = 0; i < count; i++) {
