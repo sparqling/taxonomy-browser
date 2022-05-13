@@ -3,6 +3,7 @@ let currentTaxonName = null;
 let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
 let proteomeMap = {};
+const sparql_dir = 'https://github.com/sparqling/taxonomy-browser/blob/0fdb5bb/sparql/'
 
 Storage.prototype.setObject = function(key, value) {
   this.setItem(key, JSON.stringify(value));
