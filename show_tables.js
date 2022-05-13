@@ -1,8 +1,8 @@
-let haystack = [];
+let candidates = [];
 let currentTaxonName = null;
 let scientificNameMap = {}; // Display name => Scientific name
 let displayNameMap = {}; // Scientific name => Display name
-let currentGenomeMap = {};
+let proteomeMap = {};
 
 Storage.prototype.setObject = function(key, value) {
   this.setItem(key, JSON.stringify(value));
@@ -39,7 +39,7 @@ function escapeRegExp(string) {
 }
 
 function init() {
-  haystack = [];
+  candidates = [];
   $.ajaxSetup({async: false});
 
   queryBySpang(`${sparql_dir}/get_taxa_as_candidates.rq`, {}, (data) => {
@@ -51,19 +51,18 @@ function init() {
         scientificNameMap[entry] = binding.name.value;
         displayNameMap[binding.name.value] = entry;
       }
-      haystack.push(entry);
+      candidates.push(entry);
     }
   });
 
   $('#tags').focus();
 }
 
-
 $(function () {
   $('#tags').autocomplete({
     source: (request, response) => {
       response(
-        $.grep(haystack, (value) => {
+        $.grep(candidates, (value) => {
           let regexp = new RegExp('\\b' + escapeRegExp(request.term), 'i');
           return value.match(regexp);
         })
@@ -143,11 +142,9 @@ $(function () {
     let selected = $(this).prop("checked");
     let proteome_id = this_row.find('td.proteome-id-td').text();
     // let orgname = this_row.find('td:nth-child(7)').text();
-    
-    
     if(selected) {
       // Add the item
-      selectedTaxa[proteome_id] = currentGenomeMap[proteome_id];
+      selectedTaxa[proteome_id] = proteomeMap[proteome_id];
     }
     else {
       // Delete the item
@@ -167,10 +164,10 @@ $(function () {
       let each_row = $(each_checkbox).closest('tr');
       // Eech item
       let proteome_id = each_row.find('td.proteome-id-td').text();
-      
+
       if (selected) {
         // Add the item
-        selectedTaxa[proteome_id] = currentGenomeMap[proteome_id];
+        selectedTaxa[proteome_id] = proteomeMap[proteome_id];
         $(each_checkbox).prop("checked", true);
       } else {
         // Delete the item
@@ -633,7 +630,7 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
 
     let list_html = '';
     let count_reference = 0;
-    currentGenomeMap = {};
+    proteomeMap = {};
     for (let i = 0; i < count; i++) {
       let row = data_p[i];
       
@@ -652,7 +649,7 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
       const busco_fragmented = row['busco_fragmented'] ? row['busco_fragmented']['value'] : '';
       const busco_missing = row['busco_missing'] ? row['busco_missing']['value'] : '';
       const assembly = row['assembly'] ? row['assembly']['value'] : '';
-      currentGenomeMap[up_id] = {
+      proteomeMap[up_id] = {
         genome_taxid,
         up_id_url,
         up_id,
@@ -684,7 +681,7 @@ function show_genome_list(rank, taxon_name, taxid, genome_type) {
     let count_html = `<br><font size="2"><b><i>${taxon_name}</i>: ${count} ${count_unit}</b>`;
     count_html += ` (including <b>${count_reference}</b> ${reference_count_unit})</font>`;
     count_html += `<label style="margin-left: 20px; margin-bottom: 10px">Filter by: </label><input id="detail-filter" data-column="all" type="search" style="margin-right: 30px;">`;
-    show_genomes_table(Object.values(currentGenomeMap), count_html);
+    show_genomes_table(Object.values(proteomeMap), count_html);
   });
 
   return count;
